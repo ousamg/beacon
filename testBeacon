@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 import sys, json, urllib2
 import unittest
 import imp
@@ -65,4 +65,3 @@ class TestBeacon(unittest.TestCase):
     #unittest.main()
 suite = unittest.TestLoader().loadTestsFromTestCase(TestBeacon)
 unittest.TextTestRunner(verbosity=2).run(suite)
-
