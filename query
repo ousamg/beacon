@@ -670,7 +670,6 @@ def beaconQuery(chrom, pos, refBases, altBases, reference, dataset, format):
         return jsonErrMsg(ex.msg)
 
 def mainCgi():
-    print "Content-Type: text/html\n"
 
     url = os.environ["REQUEST_URI"]
     parsedUrl = urlparse.urlparse(url)
@@ -693,6 +692,11 @@ def mainCgi():
     reference = form.getfirst("reference")
     dataset = form.getfirst("dataset")
     format = form.getfirst("format")
+
+    if format is not None and format.lower() == "json":
+        print "Content-Type: application/json\n"
+    else:
+        print "Content-Type: text/html"
 
     print beaconQuery(chrom, pos, refBases, altBases, reference, dataset, format)
 
