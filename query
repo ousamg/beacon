@@ -670,7 +670,6 @@ def beaconQuery(chrom, pos, refBases, altBases, reference, dataset, format):
         return jsonErrMsg(ex.msg)
 
 def mainCgi():
-
     url = os.environ["REQUEST_URI"]
     parsedUrl = urlparse.urlparse(url)
 
@@ -679,7 +678,8 @@ def mainCgi():
 
     # react based on symlink that was used to call this script
     page = parsedUrl[2].split("/")[-1] # last part of path is REST endpoint
-    if page=="info":
+    if page == "info":
+        print "Content-Type: application/json\n"
         print makeJson(beaconInfo())
         sys.exit(0)
 
@@ -696,8 +696,7 @@ def mainCgi():
     if format is not None and format.lower() == "json":
         print "Content-Type: application/json\n"
     else:
-        print "Content-Type: text/html"
-
+        print "Content-Type: text/html\n"
     print beaconQuery(chrom, pos, refBases, altBases, reference, dataset, format)
 
 if __name__=="__main__":
