@@ -48,17 +48,73 @@ class TestBeacon(unittest.TestCase):
         self.assertTrue(bi["description"] != "")
         self.assertTrue(bi["api"] != "")
 
-    def test_allele(self):
-        " test true reply with the special testing chromosome"
-        pos = 0
-        rep = queryServer("test", str(pos), "A", "", "", "test")
-        self.assertTrue(rep["response"]["exists"]=="true")
+    # disable test because it doens't actually do anything, but keep around as reference for the "force true" response
+    # def test_allele(self):
+    #     " test true reply with the special testing chromosome"
+    #     pos = 0
+    #     rep = queryServer("test", str(pos), "A", "", "", "test")
+    #     self.assertTrue(rep["response"]["exists"]=="true")
+
+    def test_allele_true(self):
+        "test true reply with known variant entry"
+        pos = "10150"
+        chrom = "1"
+        ab = "A"
+        rb = ""
+        ref = "GRCh37"
+        ds = "test"
+        rep = queryServer(chrom, pos, ab, rb, ref, ds)
+        self.assertTrue(rep["response"]["exists"] == "true")
 
     def test_allele_false(self):
         " test false reply "
         pos = 10000
         rep = queryServer("test", str(pos), "A", "", "", "test")
-        self.assertTrue(rep["response"]["exists"]=="false")
+        self.assertTrue(rep["response"]["exists"] == "false")
+
+    def test_insertion_true(self):
+        "test insertions found response"
+        chrom = "1"
+        pos = "13416"
+        ab = "IGAGA"
+        rb = ""
+        ref = "GRCh37"
+        ds = "test"
+        rep = queryServer(chrom, pos, ab, rb, ref, ds)
+        self.assertTrue(rep["response"]["exists"] == "true")
+
+    def test_insertion_false(self):
+        "test insertions not found response"
+        chrom = "1"
+        pos = "13416"
+        ab = "IGAAG"
+        rb = ""
+        ref = "GRCh37"
+        ds = "test"
+        rep = queryServer(chrom, pos, ab, rb, ref, ds)
+        self.assertTrue(rep["response"]["exists"] == "false")
+
+    def test_deletion_true(self):
+        "test deletion found response"
+        chrom = "1"
+        pos = "534447"
+        ab = "D4"
+        rb = ""
+        ref = "GRCh37"
+        ds = "test"
+        rep = queryServer(chrom, pos, ab, rb, ref, ds)
+        self.assertTrue(rep["response"]["exists"] == "true")
+
+    def test_deletion_false(self):
+        "test deletion not found response"
+        chrom = "1"
+        pos = "534447"
+        ab = "D2"
+        rb = ""
+        ref = "GRCh37"
+        ds = "test"
+        rep = queryServer(chrom, pos, ab, rb, ref, ds)
+        self.assertTrue(rep["response"]["exists"] == "false")
 
 #if __name__ == '__main__':
     #unittest.main()
