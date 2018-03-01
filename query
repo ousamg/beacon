@@ -35,7 +35,8 @@ responses = {
 }
 content = {
     "json": "application/json",
-    "text": "text/html"
+    "text": "text/html",
+    "": "text/html"
 }
 
 # special case: same datasets do not have alt alleles. In this case, an overlap is enough to trigger a "true"
@@ -275,18 +276,8 @@ def lookupAllele(chrom, pos, allele, reference, dataset):
 
 def lookupAlleleJson(chrom, pos, altBases, refBases, reference, dataset):
     " call lookupAllele and wrap the result into dictionaries "
-    try:
-        chrom, pos, altBases, reference, dataset = checkParams(chrom, pos, altBases, reference, dataset)
-    except BeaconError as e:
-        print "Status: 400 Bad Request\n"
-        print str(e)
-        sys.exit(0)
-
-    try:
-        exists = lookupAllele(chrom, pos, altBases, reference, dataset)
-    except BeaconError as e:
-        printResponse(e.msg, content["text"], e.code)
-        sys.exit(0)
+    chrom, pos, altBases, reference, dataset = checkParams(chrom, pos, altBases, reference, dataset)
+    exists = lookupAllele(chrom, pos, altBases, reference, dataset)
 
     if chrom == "test" and pos == 0:
         exists = "true"
@@ -680,15 +671,11 @@ def beaconQuery(chrom, pos, refBases, altBases, reference, dataset, format):
         printResponse(makeHelp(), content["text"], 400)
         sys.exit(0)
 
-    try:
-        ret = lookupAlleleJson(chrom, pos, altBases, refBases, reference, dataset)
-        if format == "text":
-            return ret["response"]["exists"]
-        else:
-            return makeJson(ret)
-    except BeaconError as e:
-        printResponse(jsonErrMsg(e.msg), content["json"], e.code)
-        sys.exit(0)
+    ret = lookupAlleleJson(chrom, pos, altBases, refBases, reference, dataset)
+    if format == "text":
+        return ret["response"]["exists"]
+    else:
+        return makeJson(ret)
 
 def mainCgi():
     url = os.environ["REQUEST_URI"]
@@ -713,19 +700,25 @@ def mainCgi():
     dataset = form.getfirst("dataset")
     format = form.getfirst("format")
 
+    try:
+        queryResp = beaconQuery(chrom, pos, refBases, altBases, reference, dataset, format)
 
-    queryResp = beaconQuery(chrom, pos, refBases, altBases, reference, dataset, format)
-    if format is not None and format.lower() == "json":
-        printResponse(queryResp, content["json"])
-    else:
-        printResponse(queryResp)
+        if format is not None and format.lower() == "json":
+            printResponse(queryResp, content["json"])
+        else:
+            printResponse(queryResp)
+    except BeaconError as e:
+        printResponse(e.msg, content["text"], e.code)
+    except Exception as e:
+        printResponse(str(e), content["text"], 500)
 
 def printResponse(body, contentType = "text/html", responseCode = 200):
-    if responseCode != 200:
-        print "Status: {} {}\n".format(responseCode, responses.get(responseCode, "Unknown response code"))
-    print "Content-Type: {}\n".format(contentType)
-    print "\n"
-    print body
+    header = ",".join([
+        "Status: {} {}".format(responseCode, responses.get(responseCode, "Unknown response code")),
+        "Content-Type: {}".format(contentType)
+    ])
+    print "{}\n\n{}".format(header, body)
+    sys.stdout.flush()
 
 
 if __name__ == "__main__":
