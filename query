@@ -687,7 +687,7 @@ def mainCgi():
     # react based on symlink that was used to call this script
     page = parsedUrl[2].split("/")[-1] # last part of path is REST endpoint
     if page == "info":
-        printResponse(makeJson(beaconInfo()), "application/json")
+        printResponse(makeJson(beaconInfo()), content["json"])
         sys.exit(0)
 
     hgBotDelay()
