@@ -31,7 +31,6 @@ def queryServer(chrom, pos, alternateBases, referenceBases, reference, dataset):
     return ret
 
 class TestBeacon(unittest.TestCase):
-
     def test_outside(self):
         " test query, beacon "
         maxInt = 2147483646

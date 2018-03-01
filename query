@@ -22,10 +22,20 @@ hgConf = None
 
 # descriptions of datasets that this beacon is serving
 DataSetDescs = {
-"hgmd" : "Human Genome Variation Database, only single-nucleotide variants, public version, provided by Biobase",
-"lovd" : "Leiden Open Varation Database installations that agreed to share their variants, only single-nucleotide variants and deletions",
-"test" : "small test data on Chromosome 1, from ICGC",
-"test2" : "another piece of test data from Chromosome 1, also from ICGC"
+    "hgmd" : "Human Genome Variation Database, only single-nucleotide variants, public version, provided by Biobase",
+    "lovd" : "Leiden Open Varation Database installations that agreed to share their variants, only single-nucleotide variants and deletions",
+    "test" : "small test data on Chromosome 1, from ICGC",
+    "test2" : "another piece of test data from Chromosome 1, also from ICGC"
+}
+
+responses = {
+    200: "OK",
+    400: "Bad Request",
+    500: "Internal Server Error"
+}
+content = {
+    "json": "application/json",
+    "text": "text/html"
 }
 
 # special case: same datasets do not have alt alleles. In this case, an overlap is enough to trigger a "true"
@@ -48,7 +58,7 @@ def queryBottleneck(host, port, ip):
         resp = s.recv(1024)
         buf.append(resp)
         totalLen+= len(resp)
-        if totalLen==expLen:
+        if totalLen == expLen:
             break
     return int("".join(buf))
 
@@ -92,7 +102,7 @@ def parseHgConf(confDir="."):
 
 def jsonErrMsg(errMsg=None):
     " wrap error message into a JSON dict "
-    if errMsg == None:
+    if errMsg is None:
         sys.exit(0)
 
     helpUrl = getBeaconDesc()["homepage"]
@@ -126,7 +136,7 @@ def dataSetResources():
     dsrList = []
     for refDb in getBeaconRefs():
         conn = dbOpen(refDb, mustExist=True)
-        if conn==None:
+        if conn is None:
             continue
         for tableName in dbListTables(conn):
             rows = dbQuery(conn, "SELECT COUNT(*) from %s" % tableName, None)
@@ -164,7 +174,7 @@ def getBeaconRefs():
 def beaconInfo():
     " return a beaconInfo dict "
     size, dsrList = dataSetResources()
-    if size==0:
+    if size == 0:
         return jsonErrMsg("This beacon is not serving any data. There are either no *.sqlite files in the beacon directory or they contain no data.")
 
     return \
@@ -194,22 +204,23 @@ def hgBotDelay():
         sys.exit(0)
 
 class BeaconError(Exception):
-    def __init__(self, msg):
+    def __init__(self, msg, code = 400):
         self.msg = msg
+        self.code = code
 
 def checkParams(chrom, pos, allele, reference, track):
     " make sure the parameters follow the spec "
     # default is GRCh37 is not assembly has been provided
-    if reference==None or reference=="":
+    if reference is None or reference == "":
         reference=getBeaconRefs()[0]
     # make sure that the assembly is a valid one
     if reference not in getBeaconRefs():
         raise BeaconError("invalid 'reference' parameter, valid ones are %s" % ",".join(getBeaconRefs()))
     # chrom is required
-    if chrom==None or chrom=="":
+    if chrom is None or chrom == "":
         raise BeaconError("missing chromosome parameter")
     # allele is required
-    if allele==None or allele=="":
+    if allele is None or allele == "":
         raise BeaconError("missing allele parameter")
 
     allele = allele.upper()
@@ -217,21 +228,21 @@ def checkParams(chrom, pos, allele, reference, track):
     if not (re.compile("^[ACTG]+$").match(allele)!=None or \
        re.compile("^I[ACTG]+$").match(allele)!=None or \
        re.compile("^D[0-9]+$").match(allele)!=None):
-        raise("invalid allele parameter, can only be a [ACTG]+ or I[ACTG]+ or D[0-9]+")
+        raise BeaconError("invalid allele parameter, can only be a [ACTG]+ or I[ACTG]+ or D[0-9]+")
     if track is not None:
         if not track.isalnum():
             raise BeaconError("'dataset' parameter must contain only alphanumeric characters")
         if len(track)>100:
             raise BeaconError("'dataset' parameter must not be longer than 100 chars")
 
-    if pos==None or not pos.isdigit():
+    if pos is None or not pos.isdigit():
         raise BeaconError("'position' parameter is not a number")
     pos = int(pos)
 
     # convert chrom to UCSC 'chr'+Num format
     # we currently don't accept the new hg38 sequences
     # -> is this a problem?
-    if chrom==None:
+    if chrom is None:
         raise BeaconError( "missing chromosome parameter")
     if not ((chrom.isdigit() and int(chrom)>=1 and int(chrom)<=22) or chrom in ["X","Y","M","test"]):
         raise BeaconError( "invalid chromosome name %s" % chrom)
@@ -244,7 +255,7 @@ def lookupAllele(chrom, pos, allele, reference, dataset):
     tableList = dbListTables(conn)
     if dataset!=None:
         if dataset not in tableList:
-            raise BeaconError("dataset %s is not present on this server" % dataset)
+            raise BeaconError("dataset %s is not present on this server" % dataset, 500)
         tableList = [dataset]
 
     for tableName in tableList:
@@ -264,10 +275,20 @@ def lookupAllele(chrom, pos, allele, reference, dataset):
 
 def lookupAlleleJson(chrom, pos, altBases, refBases, reference, dataset):
     " call lookupAllele and wrap the result into dictionaries "
-    chrom, pos, altBases, reference, dataset = checkParams(chrom, pos, altBases, reference, dataset)
-    exists = lookupAllele(chrom, pos, altBases, reference, dataset)
+    try:
+        chrom, pos, altBases, reference, dataset = checkParams(chrom, pos, altBases, reference, dataset)
+    except BeaconError as e:
+        print "Status: 400 Bad Request\n"
+        print str(e)
+        sys.exit(0)
 
-    if chrom=="test" and pos==0:
+    try:
+        exists = lookupAllele(chrom, pos, altBases, reference, dataset)
+    except BeaconError as e:
+        printResponse(e.msg, content["text"], e.code)
+        sys.exit(0)
+
+    if chrom == "test" and pos == 0:
         exists = "true"
 
     query = {
@@ -277,7 +298,7 @@ def lookupAlleleJson(chrom, pos, altBases, refBases, reference, dataset):
         "position": pos,
         "reference": reference,
         "dataset": dataset
-        }
+    }
 
     ret = {"beacon" : getBeaconDesc(), "query" : query, \
         "response" : {"exists":exists} }
@@ -315,7 +336,7 @@ def parseArgs():
         default = "vcf")
     (options, args) = parser.parse_args()
 
-    if len(args)==0 and not options.port:
+    if len(args) == 0 and not options.port:
         parser.print_help()
         sys.exit(0)
     return args, options
@@ -367,7 +388,7 @@ def dbListTables(conn):
 
 def dbQuery(conn, query, params):
     cursor = conn.cursor()
-    if params==None:
+    if params is None:
         cursor.execute(query)
     else:
         cursor.execute(query, params)
@@ -391,12 +412,12 @@ def readAllelesVcf(ifh):
             chrom = chrom.replace("chr","")
         pos = int(pos)-1 # VCF is 1-based, beacon is 0-based
 
-        if alt==".":
+        if alt == ".":
             emptyCount += 1
             continue
 
-        refIsOne = len(ref)==1
-        altIsOne = len(alt)==1
+        refIsOne = len(ref) == 1
+        altIsOne = len(alt) == 1
 
         if refIsOne and altIsOne:
             # single bp subst
@@ -441,10 +462,10 @@ def readAllelesLovd(ifh):
             continue
         chrom, start, end, desc = line.rstrip("\n").split("\t")[:4]
 
-        if desc[-2]==">":
+        if desc[-2] == ">":
             mutDesc = desc[-3:]
             ref, _, alt = mutDesc
-            assert(len(mutDesc)==3)
+            assert(len(mutDesc) == 3)
         elif desc.endswith("del"):
             alt = "D"+str(int(end)-int(start))
         else:
@@ -473,8 +494,8 @@ def readAllelesHgmd(ifh):
         start = int(start)
         end = int(end)
 
-        if desc=="substitution":
-            assert(end-start==1)
+        if desc == "substitution":
+            assert(end-start == 1)
             alt = "*"
         else:
             skipCount += 1
@@ -496,7 +517,7 @@ def readAllelesCga(ifh):
     count = 0
     skipCount = 0
     for line in ifh:
-        if line.startswith("#") or len(line)==1:
+        if line.startswith("#") or len(line) == 1:
             continue
         fields = line.rstrip("\n").split("\t")
         if fields[6]!="snp":
@@ -571,15 +592,15 @@ def importFiles(refDb, fileNames, datasetName, format):
         else:
             ifh = open(fileName)
 
-        if format=="vcf":
+        if format == "vcf":
             alleles.extend(readAllelesVcf(ifh))
-        elif format=="lovd":
+        elif format == "lovd":
             alleles.extend(readAllelesLovd(ifh))
-        elif format=="hgmd":
+        elif format == "hgmd":
             alleles.extend(readAllelesHgmd(ifh))
-        elif format=="cga":
+        elif format == "cga":
             alleles.extend(readAllelesCga(ifh))
-        elif format=="bed":
+        elif format == "bed":
             alleles.extend(readAllelesBed(ifh))
 
     # remove duplicates and sort again
@@ -655,19 +676,19 @@ def mainCommandLine():
 
 def beaconQuery(chrom, pos, refBases, altBases, reference, dataset, format):
     """ query the beacon, returns a JSON or text string """
-    if chrom==None and pos==None and altBases==None:
-        return makeHelp()
+    if chrom is None and pos is None and altBases is None:
+        printResponse(makeHelp(), content["text"], 400)
+        sys.exit(0)
 
     try:
-
         ret = lookupAlleleJson(chrom, pos, altBases, refBases, reference, dataset)
-        if format=="text":
+        if format == "text":
             return ret["response"]["exists"]
         else:
             return makeJson(ret)
-
-    except BeaconError, ex:
-        return jsonErrMsg(ex.msg)
+    except BeaconError as e:
+        printResponse(jsonErrMsg(e.msg), content["json"], e.code)
+        sys.exit(0)
 
 def mainCgi():
     url = os.environ["REQUEST_URI"]
@@ -679,8 +700,7 @@ def mainCgi():
     # react based on symlink that was used to call this script
     page = parsedUrl[2].split("/")[-1] # last part of path is REST endpoint
     if page == "info":
-        print "Content-Type: application/json\n"
-        print makeJson(beaconInfo())
+        printResponse(makeJson(beaconInfo()), "application/json")
         sys.exit(0)
 
     hgBotDelay()
@@ -693,13 +713,22 @@ def mainCgi():
     dataset = form.getfirst("dataset")
     format = form.getfirst("format")
 
-    if format is not None and format.lower() == "json":
-        print "Content-Type: application/json\n"
-    else:
-        print "Content-Type: text/html\n"
-    print beaconQuery(chrom, pos, refBases, altBases, reference, dataset, format)
 
-if __name__=="__main__":
+    queryResp = beaconQuery(chrom, pos, refBases, altBases, reference, dataset, format)
+    if format is not None and format.lower() == "json":
+        printResponse(queryResp, content["json"])
+    else:
+        printResponse(queryResp)
+
+def printResponse(body, contentType = "text/html", responseCode = 200):
+    if responseCode != 200:
+        print "Status: {} {}\n".format(responseCode, responses.get(responseCode, "Unknown response code"))
+    print "Content-Type: {}\n".format(contentType)
+    print "\n"
+    print body
+
+
+if __name__ == "__main__":
     # deactivate this on the RR, but useful for debugging: prints a http header
     # on errors
     main()
