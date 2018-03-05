@@ -636,7 +636,7 @@ def startDevServer(port):
         print("You are trying to start the development webserver but the cherryPy directory cannot be found.")
         print("You have to re-download or copy the beacon directory again from github or your source to this directory and include the cherryPy/ subdirectory.")
         sys.exit(1)
-    cherrypy.config.update({'server.socket_port': port})
+    cherrypy.config.update({'server.socket_port': port, 'server.socket_host': '0.0.0.0'})
     cherrypy.quickstart(DevServer())
     sys.exit(0)
 

@@ -10,17 +10,15 @@ RUN apt-get update && apt-get install -y apache2 vim \
 #===============================#
 # Docker Image Configuration	#
 #===============================#
-LABEL Description='Beacon' \
+LABEL Description='GA4GH Beacon' \
 		Vendor='Oslo Universityssykehus - Avdeling for medisinsk genetikk' \
-		maintainer='tsnowlan@gmail.com'
+		Maintainer='placeholder@usit.uio.no'
 #=====================#
 # Install Beacon 	  #
 #=====================#
-ENV BEACON_DIR=/var/www/html/beacon REPO_NAME=ousBeacon REPO_URL=https://github.com/tsnowlan/ousBeacon.git
-WORKDIR ${BEACON_DIR}
-RUN git clone ${REPO_URL} \
-	&& cd ${REPO_NAME}/ \
-	&& sed -i "s/'server.socket_port': port/'server.socket_port': port, 'server.socket_host': '0.0.0.0'/g" query
+ENV BEACON_DIR=/var/www/html/beacon
+COPY . $BEACON_DIR
+WORKDIR $BEACON_DIR
 #=====================#
 # Configure Beacon 	  #
 #=====================#
