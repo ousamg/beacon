@@ -178,13 +178,12 @@ def beaconInfo():
     if size == 0:
         return jsonErrMsg("This beacon is not serving any data. There are either no *.sqlite files in the beacon directory or they contain no data.")
 
-    return \
-        {
+    return {
         "beacon": getBeaconDesc(),
         "references": getBeaconRefs(),
         "datasets": dsrList,
         "size": size
-        }
+    }
 
 def makeJson(data):
     " convert a dictionary to a JSON-encoded string "
@@ -226,9 +225,9 @@ def checkParams(chrom, pos, allele, reference, track):
 
     allele = allele.upper()
     # allele can only be a DNA sequence (~SNP) or an indel
-    if not (re.compile("^[ACTG]+$").match(allele)!=None or \
-       re.compile("^I[ACTG]+$").match(allele)!=None or \
-       re.compile("^D[0-9]+$").match(allele)!=None):
+    if not (re.compile("^[ACTG]+$").match(allele) != None or \
+       re.compile("^I[ACTG]+$").match(allele) != None or \
+       re.compile("^D[0-9]+$").match(allele) != None):
         raise BeaconError("invalid allele parameter, can only be a [ACTG]+ or I[ACTG]+ or D[0-9]+")
     if track is not None:
         if not track.isalnum():
@@ -243,9 +242,7 @@ def checkParams(chrom, pos, allele, reference, track):
     # convert chrom to UCSC 'chr'+Num format
     # we currently don't accept the new hg38 sequences
     # -> is this a problem?
-    if chrom is None:
-        raise BeaconError( "missing chromosome parameter")
-    if not ((chrom.isdigit() and int(chrom)>=1 and int(chrom)<=22) or chrom in ["X","Y","M","test"]):
+    if not ((chrom.isdigit() and int(chrom) >= 1 and int(chrom) <= 22) or chrom in ["X","Y","M","test"]):
         raise BeaconError( "invalid chromosome name %s" % chrom)
 
     return chrom, pos, allele, reference, track
@@ -254,7 +251,7 @@ def lookupAllele(chrom, pos, allele, reference, dataset):
     " check if an allele is present in a sqlite DB "
     conn = dbOpen(reference, mustExist=True)
     tableList = dbListTables(conn)
-    if dataset!=None:
+    if dataset != None:
         if dataset not in tableList:
             raise BeaconError("dataset %s is not present on this server" % dataset, 500)
         tableList = [dataset]
@@ -269,7 +266,7 @@ def lookupAllele(chrom, pos, allele, reference, dataset):
             sql = "SELECT * from %s WHERE chrom=? AND pos=? AND allele=?" % tableName
             cur.execute(sql, (chrom, pos, allele))
         row = cur.fetchone()
-        if row!=None:
+        if row != None:
             return "true"
 
     return "false"
@@ -438,7 +435,7 @@ def readAllelesVcf(ifh):
         doneData.add( dataRow )
 
     print "skipped %d VCF lines with empty ALT alleles" % emptyCount
-    print "skipped %d VCF lines with both ALT and REF alleles len!=1, cannot encode as beacon queries" % skipCount
+    print "skipped %d VCF lines with both ALT and REF alleles len != 1, cannot encode as beacon queries" % skipCount
     return rows
 
 def readAllelesLovd(ifh):
@@ -511,7 +508,7 @@ def readAllelesCga(ifh):
         if line.startswith("#") or len(line) == 1:
             continue
         fields = line.rstrip("\n").split("\t")
-        if fields[6]!="snp":
+        if fields[6] != "snp":
             skipCount += 1
             continue
         chrom = fields[3].replace("chr", "")
@@ -537,7 +534,7 @@ def readAllelesBed(ifh):
         start = int(start)
         end = int(end)
 
-        if (end-start)!=1:
+        if (end-start) != 1:
             skipCount += 1
             continue
 
@@ -595,7 +592,7 @@ def importFiles(refDb, fileNames, datasetName, format):
             alleles.extend(readAllelesBed(ifh))
 
     # remove duplicates and sort again
-    if len(fileNames)!=1:
+    if len(fileNames) != 1:
         alleles = list(set(alleles))
         alleles.sort()
 
@@ -625,7 +622,7 @@ if cherryPyLoaded:
     class DevServer(object):
         @cherrypy.expose
         def query(self, chromosome=None, position=None, referenceBases=None, alternateBases=None, reference=None, dataset=None, format=None, allele=None):
-            if allele!=None:
+            if allele != None:
                 alternateBases = allele
             return beaconQuery(chromosome, position, referenceBases, alternateBases, reference, dataset, format)
 
