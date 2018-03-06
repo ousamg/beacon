@@ -3,10 +3,10 @@ FROM python:2.7
 #=====================#
 # Setup Prerequisites #
 #=====================#
-RUN apt-get update && apt-get install -y --no-install-recommends apache2 vim \
+RUN apt-get update && apt-get install -y --no-install-recommends apache2 vim sqlite3 \
 	&& a2enmod cgi \
 	&& service apache2 restart \
-	&& rm -rf /var/lib/apt/lists/*
+	&& rm -rf /var/lib/apt/lists/* \
 	&& apt-get clean
 RUN pip install cherrypy
 #===============================#
@@ -28,8 +28,10 @@ RUN echo "ServerName localhost" | tee /etc/apache2/conf-available/fqdn.conf \
 	&& a2enconf fqdn
 COPY config/beacon.conf ${BEACON_DIR}/${REPO_NAME}/beacon.conf
 COPY config/apache2.conf /etc/apache2/apache2.conf
-# COPY app ${BEACON_DIR}
+
 #=====================#
 # Beacon Startup 	  #
 #=====================#
-CMD /usr/sbin/apache2ctl start
+# ENTRYPOINT ["/usr/sbin/apache2ctl", "-D", "FOREGROUND"]
+CMD ["/usr/sbin/apache2ctl", "-D", "FOREGROUND"]
+# ENTRYPOINT ["/usr/sbin/apache2ctl", "-D"]
