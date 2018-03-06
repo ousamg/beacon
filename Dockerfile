@@ -3,16 +3,18 @@ FROM python:2.7
 #=====================#
 # Setup Prerequisites #
 #=====================#
-RUN apt-get update && apt-get install -y apache2 vim \
+RUN apt-get update && apt-get install -y --no-install-recommends apache2 vim \
 	&& a2enmod cgi \
 	&& service apache2 restart \
 	&& rm -rf /var/lib/apt/lists/*
+	&& apt-get clean
+RUN pip install cherrypy
 #===============================#
 # Docker Image Configuration	#
 #===============================#
 LABEL Description='GA4GH Beacon' \
 		Vendor='Oslo Universityssykehus - Avdeling for medisinsk genetikk' \
-		Maintainer='placeholder@usit.uio.no'
+		Maintainer='tor.solli-nowlan@medisin.uio.no'
 #=====================#
 # Install Beacon 	  #
 #=====================#
@@ -30,4 +32,4 @@ COPY config/apache2.conf /etc/apache2/apache2.conf
 #=====================#
 # Beacon Startup 	  #
 #=====================#
-CMD /usr/sbin/apache2ctl -D FOREGROUND
+CMD /usr/sbin/apache2ctl start
