@@ -1,10 +1,27 @@
+To Do
+===
+* [ ] Break out VCF conversion to util script
+* [ ] Finalize master script for easier functionality (currently: `utils/ous-beacon.sh`)
+    * [ ] spin up / down containers
+        * [ ] start container using VCF (auto converts to sqlite before starting container)
+        * [ ] start container using sqlite
+    * [ ] Convert data (via eventual breakout or current `query`)
+    * [ ] DigitalOcean integration
+* [ ] Swap out Apache for nginx / python web server
+
+---
+
+Originally forked from https://github.com/maximilianh/ucscBeacon
+
+## _Original documentation:_
+
 Introduction
 ============
 
 The GA4H beacon system http://ga4gh.org/#/beacon is a small webservice
 that accepts a chromosome position and allele and replies with "true" or
 "false. This is an implementation of the GA4GH beacon 0.2 draft API which
-tries to be as simple as possible to install and configure, it requires 
+tries to be as simple as possible to install and configure, it requires
 only Python >2.5, the default in current linux distributions and OSX.
 
 For security reasons, the script is small and either
@@ -13,14 +30,14 @@ This beacon can slow down queries if too many come in from the same IP
 address, to prevent that someone queries the whole genome (see the end of
 this document). For security reasons, your raw data, like VCF (see below) are
 not accessed by the script, but first converted into the minimal format
-chrom-position-alternateBases. 
+chrom-position-alternateBases.
 
 Quick-start using the built-in webserver
 =======================================
 
 This should work in OSX, Linux or Windows when Python is installed (in Windows you need to rename query to query.py):
 
-    git clone https://github.com/maximilianh/ucscBeacon.git 
+    git clone https://git@git.ousamg.io:apps/beacon.git
     cd ucscBeacon
     ./query -p 8888
 
@@ -51,18 +68,18 @@ Installation in Apache as a CGI
 ===============================
 
 On Ubuntu/Debian:
-  
+
     sudo apt-get install apache2 git
     sudo a2enmod cgi
     sudo service apache2 restart
     cd /usr/lib/cgi-bin
-    git clone https://github.com/maximilianh/ucscBeacon.git 
+    git clone https://git@git.ousamg.io:apps/beacon.git
 
 On Centos/Fedora/Redhat:
 
     sudo yum install httpd git
     cd /var/www/cgi-bin
-    git clone https://github.com/maximilianh/ucscBeacon.git 
+    git clone https://git@git.ousamg.io:apps/beacon.git
 
 On OSX (thanks to Patrick Leyshock and Andrew Zimmer):
 
@@ -70,10 +87,10 @@ On OSX (thanks to Patrick Leyshock and Andrew Zimmer):
     # "LoadModule cgi_module libexec/apache2/mod_cgi.so"
     sudo apachctl -k restart
     cd /Library/WebServer/CGI-Executables/
-    curl -L -G https://github.com/maximilianh/ucscBeacon/archive/master.zip -o beacon.zip
+    curl -L -G https://git@git.ousamg.io:apps/beacon/archive/master.zip -o beacon.zip
     unzip beacon.zip
 
-  
+
 Test it
 =======
 
@@ -149,18 +166,18 @@ Apache setup
 
 If your apache does not allow symlinks or you cannot or do not want to modify
 the apache config, just use a hard link instead of a symlink:
-  
+
     rm info
     ln query info
 
-If you want to use the /info symlinks, you will need to allow symlinks 
+If you want to use the /info symlinks, you will need to allow symlinks
 in Apache. The Apache config file
 is /etc/httpd/conf/httpd.conf on Redhat and /etc/apache2/sites-enabled/000-default.conf
 on Debian/Ubuntu. The config line for this is "Options +SymLinksIfOwnerMatch", add
 it for the directory that contains cgi-bin or has the ExecCGI Option already set.
 See below for an example of what this should look like.
 
-If you do not have a cgi-bin directory in Apache at all, you can 
+If you do not have a cgi-bin directory in Apache at all, you can
 create one by adding a section like the following to your apache config.
 The config is located in /etc/apache2/sites-enabled/000-default.conf in Debian-Ubuntu or
 /etc/httpd/httpd.conf in Redhat-like distros.
@@ -192,7 +209,7 @@ The index.html page
 ===================
 
 There is a page index.html in case you want a nicer user interface to your
-beacon. The beacon is not supposed to be used by humans, as it is an API 
+beacon. The beacon is not supposed to be used by humans, as it is an API
 but you may still want to show a nice form to query it. To do this, copy the
 index.html to the root of your web server, e.g. /var/www/html (Ubuntu/Redhat).
 You will have to adapt this line
@@ -216,7 +233,7 @@ IP throttling
 
 The beacon can optionally slow down requests, if too many come in from the same
 IP address. This is meant to prevent whole-genome queries for all alleles. You
-have to run a bottleneck server for this, the tool is called "bottleneck". 
+have to run a bottleneck server for this, the tool is called "bottleneck".
 You can find a copy in the utils/ directory,
 or can download it as a binary from http://hgdownload.cse.ucsc.edu/admin/exe/ or
 in source from http://genome.ucsc.edu/admin/git.html. Run it as "bottleneck

@@ -17,7 +17,7 @@ if len(sys.argv)!=1:
 
 def queryServer(chrom, pos, alternateBases, referenceBases, reference, dataset):
     " if baseUrl is set, query via http. Otherwise just call the script directly "
-    if baseUrl == None:
+    if baseUrl is None:
         ret = hgBeacon.lookupAlleleJson(chrom, pos, alternateBases, referenceBases, reference, dataset)
     else:
         url = baseUrl+"?chromosome=%s&position=%s&alternateBases=%s" % (chrom, str(pos), alternateBases)
@@ -35,11 +35,11 @@ class TestBeacon(unittest.TestCase):
         " test query, beacon "
         maxInt = 2147483646
         rep = queryServer("1", str(maxInt), "T", "", "", "test")
-        self.assertTrue(rep["query"]["position"]==maxInt)
-        self.assertTrue(rep["query"]["reference"]=="GRCh37")
-        self.assertTrue(rep["query"]["alternateBases"]=="T")
-        self.assertTrue(rep["query"]["chromosome"]=="1")
-        self.assertTrue(rep["response"]["exists"]=="false")
+        self.assertTrue(rep["query"]["position"] == maxInt)
+        self.assertTrue(rep["query"]["reference"] == "GRCh37")
+        self.assertTrue(rep["query"]["alternateBases"] == "T")
+        self.assertTrue(rep["query"]["chromosome"] == "1")
+        self.assertTrue(rep["response"]["exists"] == "false")
 
         bi = rep["beacon"]
         self.assertTrue(bi["id"] != "")
@@ -53,7 +53,7 @@ class TestBeacon(unittest.TestCase):
     #     " test true reply with the special testing chromosome"
     #     pos = 0
     #     rep = queryServer("test", str(pos), "A", "", "", "test")
-    #     self.assertTrue(rep["response"]["exists"]=="true")
+    #     self.assertTrue(rep["response"]["exists"] == "true")
 
     def test_allele_true(self):
         "test true reply with known variant entry"

@@ -24,6 +24,7 @@ hgConf = None
 DataSetDescs = {
     "hgmd" : "Human Genome Variation Database, only single-nucleotide variants, public version, provided by Biobase",
     "lovd" : "Leiden Open Varation Database installations that agreed to share their variants, only single-nucleotide variants and deletions",
+    "ousamg": "Variants from Oslo University Hospital",
     "test" : "small test data on Chromosome 1, from ICGC",
     "test2" : "another piece of test data from Chromosome 1, also from ICGC"
 }
@@ -93,9 +94,9 @@ def parseHgConf(confDir="."):
     fname = join(currDir, confDir, "beacon.conf")
     if not isfile(fname):
         fname = join(currDir, confDir, "hg.conf")
-    if not isfile(fname):
+    elif not isfile(fname):
         fname = join(currDir, "hg.conf")
-    if not isfile(fname):
+    elif not isfile(fname):
         return {}
     hgConf = parseConf(fname)
 
@@ -636,7 +637,7 @@ def startDevServer(port):
         print("You are trying to start the development webserver but the cherryPy directory cannot be found.")
         print("You have to re-download or copy the beacon directory again from github or your source to this directory and include the cherryPy/ subdirectory.")
         sys.exit(1)
-    cherrypy.config.update({'server.socket_port': port})
+    cherrypy.config.update({'server.socket_port': port, 'server.socket_host': '0.0.0.0'})
     cherrypy.quickstart(DevServer())
     sys.exit(0)
 
