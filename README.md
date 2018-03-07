@@ -13,8 +13,6 @@ To Do
 
 Originally forked from https://github.com/maximilianh/ucscBeacon
 
-## _Original documentation:_
-
 Introduction
 ============
 
@@ -37,9 +35,9 @@ Quick-start using the built-in webserver
 
 This should work in OSX, Linux or Windows when Python is installed (in Windows you need to rename query to query.py):
 
-    git clone https://git@git.ousamg.io:apps/beacon.git
-    cd ucscBeacon
-    ./query -p 8888
+    $ git clone https://git@git.ousamg.io:apps/beacon.git
+    $ cd beacon
+    $ ./query -p 8888
 
 Then go to your web browser and try a few URLs:
 
@@ -52,173 +50,92 @@ Stop the beacon server by hitting Ctrl+C.
 
 Reset the databse and import your own data in VCF format (see below for other supported formats):
 
-    rm beaconData.GRCh37.sqlite
-    ./query GRCh37 test yourData.vcf.gz
+    $ rm beaconData.GRCh37.sqlite
+    $ ./query GRCh37 datasetName yourData.vcf.gz
 
 Restart the server:
 
-    ./query -p 8888
+    $ ./query -p 8888
 
 And query again with URLs, as above, but adapting the chromosome and position to one that is valid in your dataset.
 
 You can adapt the name of your beacon, your institution etc. by editing the
 file beacon.conf and change the beacon help text by editing the file help.txt
 
-Installation in Apache as a CGI
-===============================
+Running in Docker
+=================
 
-On Ubuntu/Debian:
+From the repo base directory:
 
-    sudo apt-get install apache2 git
-    sudo a2enmod cgi
-    sudo service apache2 restart
-    cd /usr/lib/cgi-bin
-    git clone https://git@git.ousamg.io:apps/beacon.git
-
-On Centos/Fedora/Redhat:
-
-    sudo yum install httpd git
-    cd /var/www/cgi-bin
-    git clone https://git@git.ousamg.io:apps/beacon.git
-
-On OSX (thanks to Patrick Leyshock and Andrew Zimmer):
-
-    # Uncomment this line in /etc/apache2/httpd.conf
-    # "LoadModule cgi_module libexec/apache2/mod_cgi.so"
-    sudo apachctl -k restart
-    cd /Library/WebServer/CGI-Executables/
-    curl -L -G https://git@git.ousamg.io:apps/beacon/archive/master.zip -o beacon.zip
-    unzip beacon.zip
+    $ docker build -t ousamg/beacon .
+    $ docker run -p 8080:80 -dit --name ous-beacon ousamg/beacon
 
 
 Test it
 =======
 
-Usage help info (as shown at UCSC):
+Usage help info:
 
-    wget 'http://localhost/cgi-bin/ucscBeacon/query' -O -
-
-or alternatively with curl, e.g. on OSX:
-
-    curl http://localhost/cgi-bin/ucscBeacon/query
+    $ curl http://localhost:8080/beacon/query
 
 Some test queries against the ICGC sample that is part of the repo:
 
-    wget 'http://localhost/cgi-bin/ucscBeacon/query?chromosome=1&position=10150&alternateBases=A&format=text' -O -
-    wget 'http://localhost/cgi-bin/ucscBeacon/query?chromosome=10&position=4772339&alternateBases=T&format=text' -O -
-
-or alternatively using curl, e.g. on OSX:
-
-    curl 'http://localhost/cgi-bin/ucscBeacon/query?chromosome=1&position=10150&alternateBases=A&format=text'
-    curl 'http://localhost/cgi-bin/ucscBeacon/query?chromosome=10&position=4772339&alternateBases=T&format=text'
+    $ curl 'http://localhost:8080/beacon/query?chromosome=1&position=10150&alternateBases=A&format=text'
+    $ curl 'http://localhost:8080/beacon/query?chromosome=10&position=4772339&alternateBases=T&format=text'
 
 Both should display "true".
 
-Test if the "info" symlink to the script works which shows some basic info about the beacon which you can adapt to your institution as needed:
+Or see the full JSON response:
 
-    wget 'http://localhost/cgi-bin/ucscBeacon/info' -O -
+    $ curl 'http://localhost:8080/beacon/query?chromosome=1&position=10150&alternateBases=A'
+    $ curl 'http://localhost:8080/beacon/query?chromosome=10&position=4772339&alternateBases=T'
 
-See 'Apache setup' below if this shows an error.
+View the meta information about the beacon (stored in `config/beacon.conf`):
+
+    $ curl http://localhost:8080/beacon/info
 
 For easier usage, the script supports a parameter 'format=text' which prints only one word (true or false). If you don't specify it, the result will be returned as a JSON string, which includes the query parameters:
 
-    wget 'http://localhost/cgi-bin/ucscBeacon/query?chromosome=10&position=9775129&alternateBases=T' -O -
+    $ curl 'http://localhost:8080/beacon/query?chromosome=10&position=9775129&alternateBases=T'
 
-You can rename the "ucscBeacon" directory to any different name, like "beacon" or "myBeacon".
 
 Adding your own data
 ====================
 
 Remove the default test database:
 
-    mv beaconData.GRCh37.sqlite beaconData.GRCh37.sqlite.old
+    $ mv beaconData.GRCh37.sqlite beaconData.GRCh37.sqlite.old
 
 Import some of the provided test files in complete genomics format:
 
-    ./query GRCh37 testDataCga test/var-GS000015188-ASM.tsv test/var-GS000015188-ASM2.tsv -f cga
+    $ ./query GRCh37 testDataCga test/var-GS000015188-ASM.tsv test/var-GS000015188-ASM2.tsv -f cga
 
 Or import some of the provided test files in complete genomics format:
 
-    ./query GRCh37 testDataVcf test/icgcTest.vcf test/icgcTest2.vcf
+    $ ./query GRCh37 testDataVcf test/icgcTest.vcf test/icgcTest2.vcf
 
 Or import your own VCF file as a dataset 'icgc':
 
-    ./query GRCh37 icgc simple_somatic_mutation.aggregated.vcf.gz
+    $ ./query GRCh37 icgc simple_somatic_mutation.aggregated.vcf.gz
 
 You can specify multiple filenames, so the data will get merged.
 A typical import speed is 100k rows/sec, so it can take a while if you have millions of variants.
 
 You should now be able to query your new dataset with URLs like this:
 
-    wget "http://localhost/cgi-bin/ucscBeacon/query?chromosome=1&position=1234&alternateBases=T" -O -
+    $ curl "http://localhost:8080/beacon/query?chromosome=1&position=1234&alternateBases=T"
 
 By default, the beacon will check all datasets, unless you provide a dataset name, like this:
 
-    wget "http://localhost/cgi-bin/ucscBeacon/query?chromosome=1&position=1234&alternateBases=T&dataset=icgc" -O -
+    $ curl "http://localhost:8080/beacon/query?chromosome=1&position=1234&alternateBases=T&dataset=icgc"
 
 Note that external beacon users cannot query the database during the import.
 
 Apart from VCF, the program can also parse the complete genomics variants format, BED format of LOVD
 and a special format for the database HGMD. You can run the 'query' script from the command line for a list of the import options.
 
-Apache setup
-============
 
-If your apache does not allow symlinks or you cannot or do not want to modify
-the apache config, just use a hard link instead of a symlink:
-
-    rm info
-    ln query info
-
-If you want to use the /info symlinks, you will need to allow symlinks
-in Apache. The Apache config file
-is /etc/httpd/conf/httpd.conf on Redhat and /etc/apache2/sites-enabled/000-default.conf
-on Debian/Ubuntu. The config line for this is "Options +SymLinksIfOwnerMatch", add
-it for the directory that contains cgi-bin or has the ExecCGI Option already set.
-See below for an example of what this should look like.
-
-If you do not have a cgi-bin directory in Apache at all, you can
-create one by adding a section like the following to your apache config.
-The config is located in /etc/apache2/sites-enabled/000-default.conf in Debian-Ubuntu or
-/etc/httpd/httpd.conf in Redhat-like distros.
-
-This what it should look like in distros still using Apache2.2, like CentOs/Redhat RHEL6:
-
-    ScriptAlias /cgi-bin/ /usr/lib/cgi-bin/
-    <Directory "/usr/lib/cgi-bin">
-    Options +ExecCGI -MultiViews +SymLinksIfOwnerMatch
-    Order allow,deny
-    Allow from all
-    </Directory>
-
-This is the same for Apache2.4, for more modern distros like Ubuntu, Debian, ArchLinux, etc:
-
-    ScriptAlias /cgi-bin/ /usr/lib/cgi-bin/
-    <Directory "/usr/lib/cgi-bin">
-    Options +ExecCGI -MultiViews +SymLinksIfOwnerMatch
-    Require all granted
-    </Directory>
-
-Restart Apache:
-
-    sudo apachectl -k restart
-
-You can replace /usr/lib/cgi-bin with any other directory you prefer.
-
-The index.html page
-===================
-
-There is a page index.html in case you want a nicer user interface to your
-beacon. The beacon is not supposed to be used by humans, as it is an API
-but you may still want to show a nice form to query it. To do this, copy the
-index.html to the root of your web server, e.g. /var/www/html (Ubuntu/Redhat).
-You will have to adapt this line
-
-    <form action="/cgi-bin/ucscBeacon/query" method="get">
-
-and replace /cgi-bin/ucscBeacon/query with the location of the query script on your web server.
-
-The utils/ directory
+The `utils/` directory
 ====================
 
 The binary "bottleneck" tool in this directory is a static 64bit file distributed
@@ -227,6 +144,10 @@ by UCSC.
 It can be downloaded for other platforms from
 http://hgdownload.cse.ucsc.edu/admin/exe/ or compiled from source, see
 http://genome.ucsc.edu/admin/git.html .
+
+This is also where the [ous-beacon.sh](utils/ous-beacon.sh) script lives, which can
+simplify importing data. The goal is to have it also manage the pre-filtering of the VCF
+and docker images / containers.
 
 IP throttling
 =============
