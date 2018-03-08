@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# VCF Filtering defaults
+FILTER_EXE=filter_indb.py
+FILTER_OPTS=""
+
 # VCF conversion defaults
 REF=GRCh37
 TABLE_NAME=OUSAMG
@@ -33,9 +37,11 @@ function show_help() {
     exit 1
 }
 
-while getopts ":v:h" opt; do
+while getopts ":v:f:t:h" opt; do
     case "$opt" in
         v) VCF_FILE="$OPTARG"; ACTION=convert ;;
+        f) VCF_FILE="$OPTARG"; ACTION=filter ;;
+        t) FILTER_THRESH="$OPTARG" ;;
         :) show_help "Missing argument value: -$OPTARG" ;;
         ?) show_help "Invalid argument: -$OPTARG" ;;
         *) show_help ;;
@@ -47,13 +53,13 @@ if [[ -z "$ACTION" ]]; then
     exit 1
 fi
 
-if [[ ! -f $BEACON_EXE ]]; then
-    echo "Cannot find beacon executable: '$BEACON_EXE', exiting"
-    exit 1
-fi
+# if [[ ! -f $BEACON_EXE ]]; then
+#     echo "Cannot find beacon executable: '$BEACON_EXE', exiting"
+#     exit 1
+# fi
 
 if [[ "$ACTION" == "convert" ]]; then
-    if [[ $(dirname $BEACON_EXE) != $(dirname $SQL_FILE) ]]; then
+    # if [[ $(dirname $BEACON_EXE) != $(dirname $SQL_FILE) ]]; then
 
     temp_sql="$(dirname $BEACON_EXE)/$(basename $SQL_FILE)"
     echo "temp_sql: $temp_sql"
@@ -71,6 +77,19 @@ if [[ "$ACTION" == "convert" ]]; then
     fi
     echo
     echo "$(date "+%Y-%m-%d %H:%M:%S")  Finished creating new $SQL_FILE"
+elif [[ "$ACTION" == "filter" ]]; then
+    WD=$(dirname $0)
+    if [[ ! -z $DEBUG ]]; then
+        FILTER_OPTS="$FILTER_OPTS --debug"
+    elif [[ ! -z $VERBOSE ]]; then
+        FILTER_OPTS="$FILTER_OPTS --verbose"
+    fi
+
+    if [[ ! -z $FILTER_THRESH ]]; then
+        FILTER_OPTS="$FILTER_OPTS -t $FILTER_THRESH"
+    fi
+
+    $WD/$FILTER_EXE -f $VCF_FILE $FILTER_OPTS
 
     # TODO re-implement later
 # elif [[ "$ACTION" == "run" ]]; then
