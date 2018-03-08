@@ -1,30 +1,35 @@
 #!/usr/bin/env python2
-import sys, json, urllib2
-import unittest
 import imp
+import json
 import os.path
+import sys
+import urllib2
+import unittest
 
 if os.path.isfile("query"):
-    imp.load_source("query", "query") # hgBeacon does not have the .py extension
-    import query as hgBeacon
+    imp.load_source("query", "query") # query does not have the .py extension
+    import query as beaconServer
 else:
-    imp.load_source("hgBeacon", "hgBeacon") # hgBeacon does not have the .py extension
-    import hgBeacon
+    print "Cannot locate query file, cannot test"
+    sys.exit(1)
 
 baseUrl = None
-if len(sys.argv)!=1:
+if len(sys.argv) != 1:
     baseUrl = sys.argv[1]
+    if len(baseUrl) < 9 or baseUrl[:4] != "http":
+        baseUrl = "http://" + baseUrl
+    print "Using baseUrl: '{}'".format(baseUrl)
 
 def queryServer(chrom, pos, alternateBases, referenceBases, reference, dataset):
     " if baseUrl is set, query via http. Otherwise just call the script directly "
     if baseUrl is None:
-        ret = hgBeacon.lookupAlleleJson(chrom, pos, alternateBases, referenceBases, reference, dataset)
+        ret = beaconServer.lookupAlleleJson(chrom, pos, alternateBases, referenceBases, reference, dataset)
     else:
-        url = baseUrl+"?chromosome=%s&position=%s&alternateBases=%s" % (chrom, str(pos), alternateBases)
-        if reference!="":
-            url=url+"&reference=%s" % reference
-        if dataset!="":
-            url=url+"&dataset=%s" % dataset
+        url = baseUrl + "?chromosome={}&position={}&alternateBases={}".format(chrom, pos, alternateBases)
+        if reference != "":
+            url = url + "&reference={}".format(reference)
+        if dataset != "":
+            url = url + "&dataset={}".format(dataset)
 
         data = urllib2.urlopen(url).read()
         ret = json.loads(data)
@@ -116,7 +121,5 @@ class TestBeacon(unittest.TestCase):
         rep = queryServer(chrom, pos, ab, rb, ref, ds)
         self.assertTrue(rep["response"]["exists"] == "false")
 
-#if __name__ == '__main__':
-    #unittest.main()
 suite = unittest.TestLoader().loadTestsFromTestCase(TestBeacon)
 unittest.TextTestRunner(verbosity=2).run(suite)
