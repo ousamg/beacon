@@ -34,7 +34,7 @@ responses = {
     400: "Bad Request",
     500: "Internal Server Error"
 }
-content = {
+contentTypes = {
     "json": "application/json",
     "text": "text/html",
     "": "text/html"
@@ -67,19 +67,21 @@ def queryBottleneck(host, port, ip):
 def parseConf(fname):
     " parse a hg.conf style file, return as dict key -> value (both are strings) "
     conf = {}
-    for line in open(fname):
-        line = line.strip()
-        if line.startswith("#"):
-            continue
-        elif line.startswith("include "):
-            inclFname = line.split()[1]
-            inclPath = join(dirname(fname), inclFname)
-            if isfile(inclPath):
-                inclDict = parseConf(inclPath)
-                conf.update(inclDict)
-        elif "=" in line: # string search for "="
-            key, value = line.split("=")
-            conf[key] = value
+    with open(fname) as cfile:
+        for line in cfile:
+            line = line.strip()
+            if line.startswith("#"):
+                continue
+            elif line.startswith("include "):
+                inclFname = line.split()[1]
+                inclPath = join(dirname(fname), inclFname)
+                if isfile(inclPath):
+                    inclDict = parseConf(inclPath)
+                    conf.update(inclDict)
+            elif "=" in line: # string search for "="
+                key, value = line.split("=")
+                conf[key] = value
+
     return conf
 
 def parseHgConf(confDir="."):
@@ -198,9 +200,9 @@ def hgBotDelay():
         return
     ip = os.environ["REMOTE_ADDR"]
     delay = queryBottleneck(hgConf["bottleneck.host"], hgConf["bottleneck.port"], ip)
-    if delay>10000:
+    if delay > 10000:
         time.sleep(delay/1000.0)
-    if delay>20000:
+    if delay > 20000:
         print("Blocked")
         sys.exit(0)
 
@@ -211,29 +213,32 @@ class BeaconError(Exception):
 
 def checkParams(chrom, pos, allele, reference, track):
     " make sure the parameters follow the spec "
-    # default is GRCh37 is not assembly has been provided
+    # default is GRCh37 if no assembly has been provided
     if reference is None or reference == "":
         reference=getBeaconRefs()[0]
+
     # make sure that the assembly is a valid one
     if reference not in getBeaconRefs():
         raise BeaconError("invalid 'reference' parameter, valid ones are %s" % ",".join(getBeaconRefs()))
+
     # chrom is required
     if chrom is None or chrom == "":
         raise BeaconError("missing chromosome parameter")
-    # allele is required
+
+    # allele is required and uppercase
     if allele is None or allele == "":
         raise BeaconError("missing allele parameter")
-
     allele = allele.upper()
+
     # allele can only be a DNA sequence (~SNP) or an indel
-    if not (re.compile("^[ACTG]+$").match(allele) != None or \
-       re.compile("^I[ACTG]+$").match(allele) != None or \
-       re.compile("^D[0-9]+$").match(allele) != None):
+    valid_allele = re.compile("^([ACTG]+)|(I[ACTG]+)|(D\d+)$")
+    if re.match(valid_allele, allele) is None:
         raise BeaconError("invalid allele parameter, can only be a [ACTG]+ or I[ACTG]+ or D[0-9]+")
+
     if track is not None:
         if not track.isalnum():
             raise BeaconError("'dataset' parameter must contain only alphanumeric characters")
-        if len(track)>100:
+        if len(track) > 100:
             raise BeaconError("'dataset' parameter must not be longer than 100 chars")
 
     if pos is None or not pos.isdigit():
@@ -592,10 +597,11 @@ def importFiles(refDb, fileNames, datasetName, format):
         elif format == "bed":
             alleles.extend(readAllelesBed(ifh))
 
+        ifh.close()
+
     # remove duplicates and sort again
     if len(fileNames) != 1:
-        alleles = list(set(alleles))
-        alleles.sort()
+        alleles = sorted(list(set(alleles)))
 
     loadTime = time.time()
 
@@ -619,7 +625,6 @@ def importFiles(refDb, fileNames, datasetName, format):
 # define this class only if cherryPy is installed, as otherwise the @ line
 # will trigger an error
 if cherryPyLoaded:
-
     class DevServer(object):
         @cherrypy.expose
         def query(self, chromosome=None, position=None, referenceBases=None, alternateBases=None, reference=None, dataset=None, format=None, allele=None):
@@ -651,7 +656,7 @@ def mainCommandLine():
     refDb = args[0]
     datasetName = args[1]
     fileNames = args[2:]
-    if len(args)<3:
+    if len(args) < 3:
         print("You need to specify at least an assembly, a datasetName and one fileName to import")
         sys.exit(1)
 
@@ -666,7 +671,7 @@ def mainCommandLine():
 def beaconQuery(chrom, pos, refBases, altBases, reference, dataset, format):
     """ query the beacon, returns a JSON or text string """
     if chrom is None and pos is None and altBases is None:
-        printResponse(makeHelp(), content["text"], 400)
+        printResponse(makeHelp(), contentTypes["text"], 400)
         sys.exit(0)
 
     ret = lookupAlleleJson(chrom, pos, altBases, refBases, reference, dataset)
@@ -685,7 +690,7 @@ def mainCgi():
     # react based on symlink that was used to call this script
     page = parsedUrl[2].split("/")[-1] # last part of path is REST endpoint
     if page == "info":
-        printResponse(makeJson(beaconInfo()), content["json"])
+        printResponse(makeJson(beaconInfo()), contentTypes["json"])
         sys.exit(0)
 
     hgBotDelay()
@@ -702,13 +707,13 @@ def mainCgi():
         queryResp = beaconQuery(chrom, pos, refBases, altBases, reference, dataset, format)
 
         if format is not None and format.lower() == "json":
-            printResponse(queryResp, content["json"])
+            printResponse(queryResp, contentTypes["json"])
         else:
             printResponse(queryResp)
     except BeaconError as e:
-        printResponse(e.msg, content["text"], e.code)
+        printResponse(e.msg, contentTypes["text"], e.code)
     except Exception as e:
-        printResponse(str(e), content["text"], 500)
+        printResponse(str(e), contentTypes["text"], 500)
 
 def printResponse(body, contentType = "text/html", responseCode = 200):
     header = ",".join([
