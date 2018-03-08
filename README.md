@@ -1,17 +1,6 @@
-To Do
-===
-* [ ] Break out VCF conversion to util script
-* [ ] Finalize master script for easier functionality (currently: `utils/ous-beacon.sh`)
-    * [ ] spin up / down containers
-        * [ ] start container using VCF (auto converts to sqlite before starting container)
-        * [ ] start container using sqlite
-    * [ ] Convert data (via eventual breakout or current `query`)
-    * [ ] DigitalOcean integration
-* [ ] Swap out Apache for nginx / python web server
+Originally forked from https://github.com/maximilianh/ucscBeacon
 
 ---
-
-Originally forked from https://github.com/maximilianh/ucscBeacon
 
 Introduction
 ============
