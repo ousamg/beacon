@@ -1,30 +1,21 @@
 #!/bin/bash
 
-abs_dir() {
+abs_dirname() {
     if [[ -z $1 ]]; then
-        echo "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+        SOURCE="${BASH_SOURCE[0]}"
     else
-        echo "$( cd "$( dirname "$1" )" && pwd )"
+        SOURCE=$1
     fi
+
+    # resolve $SOURCE until the file is no longer a symlink
+    while [ -h "$SOURCE" ]; do
+      DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+      SOURCE="$(readlink "$SOURCE")"
+      # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+      [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+    done
+    echo "$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 }
-
-# VCF Filtering defaults
-UTIL_DIR=$(abs_dir)
-FILTER_EXE=filter_indb.py
-FILTER_OPTS=""
-
-# VCF conversion defaults
-BEACON_EXE=${UTIL_DIR%/*}/query
-REF=GRCh37
-TABLE_NAME=${TABLE_NAME:-OUSAMG}
-SQL_FILE="beaconData.$REF.sqlite"
-
-# Docker defaults
-DOCKER=$(which docker)
-IMAGE_NAME=ousamg/beacon
-IMAGE_VER=0.1
-SQL_DEST=/var/www/html/beacon/ousBeacon/beaconData.GRCh37.sqlite
-CONF_DEST=/var/www/html/beacon/ousBeacon/beacon.conf
 
 function backup_db() {
     target_file=$1
@@ -53,6 +44,24 @@ function show_help() {
     echo
     exit 1
 }
+
+# VCF Filtering defaults
+UTIL_DIR=$(abs_dirname)
+FILTER_EXE=filter_indb.py
+FILTER_OPTS=""
+
+# VCF conversion defaults
+BEACON_EXE=${UTIL_DIR%/*}/query
+REF=GRCh37
+TABLE_NAME=${TABLE_NAME:-OUSAMG}
+SQL_FILE="beaconData.$REF.sqlite"
+
+# Docker defaults
+DOCKER=$(which docker)
+IMAGE_NAME=ousamg/beacon
+IMAGE_VER=0.1
+SQL_DEST=/var/www/html/beacon/ousBeacon/beaconData.GRCh37.sqlite
+CONF_DEST=/var/www/html/beacon/ousBeacon/beacon.conf
 
 while getopts ":v:f:t:h" opt; do
     case "$opt" in
