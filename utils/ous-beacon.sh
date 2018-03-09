@@ -1,12 +1,22 @@
 #!/bin/bash
 
+abs_dir() {
+    if [[ -z $1 ]]; then
+        echo "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    else
+        echo "$( cd "$( dirname "$1" )" && pwd )"
+    fi
+}
+
 # VCF Filtering defaults
+UTIL_DIR=$(abs_dir)
 FILTER_EXE=filter_indb.py
 FILTER_OPTS=""
 
 # VCF conversion defaults
+BEACON_EXE=${UTIL_DIR%/*}/query
 REF=GRCh37
-TABLE_NAME=OUSAMG
+TABLE_NAME=${TABLE_NAME:-OUSAMG}
 SQL_FILE="beaconData.$REF.sqlite"
 
 # Docker defaults
@@ -32,7 +42,14 @@ function show_help() {
     echo
     # keep old arg string for reference when re-adding functionality
     # echo "    usage: $0 < -v|--vcf VCF_FILE || -r|--run > [ -c|--config BEACON_CONF -q|--sqlite SQL_FILE ]"
-    echo "    usage: $0 < -v|--vcf VCF_FILE >"
+    echo "    usage: $0 < -v VCF_FILE > < -f VCF_FILE [-t THRESHOLD] >"
+    echo
+    echo "   VCF Conversion:"
+    echo "   -v     Convert the specified VCF file into the beacon SQLite format"
+    echo
+    echo "   VCF Filtering:"
+    echo "   -f     Filter the VCF file for variants with a minimum number of indications"
+    echo "   -t     Minimum threshold when filtering VCF. Default: 5"
     echo
     exit 1
 }
@@ -42,8 +59,9 @@ while getopts ":v:f:t:h" opt; do
         v) VCF_FILE="$OPTARG"; ACTION=convert ;;
         f) VCF_FILE="$OPTARG"; ACTION=filter ;;
         t) FILTER_THRESH="$OPTARG" ;;
+        h) show_help ;;
         :) show_help "Missing argument value: -$OPTARG" ;;
-        ?) show_help "Invalid argument: -$OPTARG" ;;
+        ?) BADOPT=$((OPTIND-1)); show_help "Invalid argument: $(echo ${!BADIND})" ;;
         *) show_help ;;
     esac
 done
@@ -53,14 +71,12 @@ if [[ -z "$ACTION" ]]; then
     exit 1
 fi
 
-# if [[ ! -f $BEACON_EXE ]]; then
-#     echo "Cannot find beacon executable: '$BEACON_EXE', exiting"
-#     exit 1
-# fi
+if [[ ! -f $BEACON_EXE ]]; then
+    echo "Cannot find beacon executable: '$BEACON_EXE', exiting"
+    exit 1
+fi
 
 if [[ "$ACTION" == "convert" ]]; then
-    # if [[ $(dirname $BEACON_EXE) != $(dirname $SQL_FILE) ]]; then
-
     temp_sql="$(dirname $BEACON_EXE)/$(basename $SQL_FILE)"
     echo "temp_sql: $temp_sql"
     backup_db $temp_sql
@@ -78,7 +94,6 @@ if [[ "$ACTION" == "convert" ]]; then
     echo
     echo "$(date "+%Y-%m-%d %H:%M:%S")  Finished creating new $SQL_FILE"
 elif [[ "$ACTION" == "filter" ]]; then
-    WD=$(dirname $0)
     if [[ ! -z $DEBUG ]]; then
         FILTER_OPTS="$FILTER_OPTS --debug"
     elif [[ ! -z $VERBOSE ]]; then
@@ -89,7 +104,7 @@ elif [[ "$ACTION" == "filter" ]]; then
         FILTER_OPTS="$FILTER_OPTS -t $FILTER_THRESH"
     fi
 
-    $WD/$FILTER_EXE -f $VCF_FILE $FILTER_OPTS
+    $UTIL_DIR/$FILTER_EXE -f $VCF_FILE $FILTER_OPTS
 
     # TODO re-implement later
 # elif [[ "$ACTION" == "run" ]]; then
