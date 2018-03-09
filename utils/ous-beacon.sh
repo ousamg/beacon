@@ -31,7 +31,7 @@ docker_build() {
 }
 
 docker_run() {
-    $DOCKER run -dit --restart=always --name ous-beacon -p 8080:80 ${DOCKER_ARGS[@]} $IMAGE_NAME:$IMAGE_VER
+    $DOCKER run -dit --restart=always --name $CTR_NAME -p 8080:80 ${DOCKER_ARGS[@]} $IMAGE_NAME:$IMAGE_VER
 }
 
 show_help() {
@@ -75,6 +75,7 @@ SQL_FILE="beaconData.$REF.sqlite"
 DOCKER=$(which docker)
 IMAGE_NAME=ousamg/beacon
 IMAGE_VER=0.1
+CTR_NAME=ous-beacon
 SQL_DEST=/var/www/html/beacon/beaconData.GRCh37.sqlite
 CONF_DEST=/var/www/html/beacon/beacon.conf
 
