@@ -3,3 +3,5 @@ queryc
 infoc
 testBeaconc
 test_data
+*inDB-*.vcf.gz
+*filtered_indb-*.vcf.gz
