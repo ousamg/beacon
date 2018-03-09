@@ -61,7 +61,7 @@ while getopts ":v:f:t:h" opt; do
         t) FILTER_THRESH="$OPTARG" ;;
         h) show_help ;;
         :) show_help "Missing argument value: -$OPTARG" ;;
-        ?) BADOPT=$((OPTIND-1)); show_help "Invalid argument: $(echo ${!BADIND})" ;;
+        ?) BADIND=$((OPTIND-1)); show_help "Invalid argument: $(echo ${!BADIND})" ;;
         *) show_help ;;
     esac
 done
