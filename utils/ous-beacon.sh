@@ -27,20 +27,19 @@ backup_db() {
 }
 
 docker_build() {
-    echo "docker build -t $IMAGE_NAME:$IMAGE_VER $(abs_dirname $BEACON_EXE)"
+    $DOCKER build ${DOCKER_ARGS[@]} -t $IMAGE_NAME:$IMAGE_VER $(abs_dirname $BEACON_EXE)
 }
 
 docker_run() {
-    echo "$DOCKER run -dit --restart=always --name ous_beacon -p 8080:80 $IMAGE_NAME:$IMAGE_VER"
+    $DOCKER run -dit --restart=always --name ous-beacon -p 8080:80 ${DOCKER_ARGS[@]} $IMAGE_NAME:$IMAGE_VER
 }
 
 show_help() {
+    # Print a message up top (usually an error), if passed as an arg
     if [[ ! -z $1 ]]; then
         echo $1
     fi
     echo
-    # keep old arg string for reference when re-adding functionality
-    # echo "    usage: $0 < -v|--vcf VCF_FILE || -r|--run > [ -c|--config BEACON_CONF -q|--sqlite SQL_FILE ]"
     echo "    usage: $0 < -v VCF_FILE > < -f VCF_FILE [-t THRESHOLD] >"
     echo
     echo "   VCF Conversion:"
@@ -49,6 +48,14 @@ show_help() {
     echo "   VCF Filtering:"
     echo "   -f     Filter the VCF file for variants with a minimum number of indications"
     echo "   -t     Minimum threshold when filtering VCF. Default: 5"
+    echo
+    echo "  Docker functionality:"
+    echo "  -r      Run the docker image generated from the repo Dockerfile"
+    echo "  -b      Build the docker image generated from the repo Dockerfile"
+    echo "    Note: All docker actions can use -d to pass specific docker flags."
+    echo
+    echo " e.g., to run in docker with a specific sqlite db instead of the current one:"
+    echo "     $0 -r -d '-v /some/db.sqlite:/var/www/html/beacon/beacon.GRCh37.sqlite'"
     echo
     exit 1
 }
@@ -68,8 +75,8 @@ SQL_FILE="beaconData.$REF.sqlite"
 DOCKER=$(which docker)
 IMAGE_NAME=ousamg/beacon
 IMAGE_VER=0.1
-SQL_DEST=/var/www/html/beacon/ousBeacon/beaconData.GRCh37.sqlite
-CONF_DEST=/var/www/html/beacon/ousBeacon/beacon.conf
+SQL_DEST=/var/www/html/beacon/beaconData.GRCh37.sqlite
+CONF_DEST=/var/www/html/beacon/beacon.conf
 
 while getopts ":v:f:t:brd:h" opt; do
     case "$opt" in
@@ -125,22 +132,11 @@ elif [[ "$ACTION" == "filter" ]]; then
     fi
 
     $UTIL_DIR/$FILTER_EXE -f $VCF_FILE $FILTER_OPTS
-
-    # TODO re-implement later
 elif [[ "$ACTION" == "run" ]]; then
     if [[ $($DOCKER image ls | egrep -c "$IMAGE_NAME\s+$IMAGE_VER") -ne 1 ]]; then
         docker_build
     fi
     docker_run
-    # if [[ ! -f $SQL_FILE ]]; then
-    #     echo "Unable to find SQLite file: '$SQL_FILE'. Check it exists or specify a new location with -q|--sql"
-    #     exit 1
-    # elif [[ ! -f $BEACON_CONF ]]; then
-    #     echo "Unable to find beacon.conf file: '$BEACON_CONF'. Check it exists or specify a new location with -c|--conf"
-    #     exit 1
-    # fi
-    #
-    # echo "$DOCKER run -d -v $SQL_FILE:$SQL_DEST -v $BEACON_CONF:$CONF_DEST --restart=always --name ous_beacon -p 8080:80 $IMAGE_NAME:$IMAGE_VER"
 elif [[ "$ACTION" == "build" ]]; then
     docker_build
 else
