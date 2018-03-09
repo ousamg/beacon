@@ -17,7 +17,7 @@ abs_dirname() {
     echo "$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 }
 
-function backup_db() {
+backup_db() {
     target_file=$1
     if [[ -e $target_file ]]; then
         old_db="$target_file.$(date +%Y%m%d-%H%M%S)"
@@ -26,7 +26,15 @@ function backup_db() {
     fi
 }
 
-function show_help() {
+docker_build() {
+    echo "docker build -t $IMAGE_NAME:$IMAGE_VER $(abs_dirname $BEACON_EXE)"
+}
+
+docker_run() {
+    echo "$DOCKER run -dit --restart=always --name ous_beacon -p 8080:80 $IMAGE_NAME:$IMAGE_VER"
+}
+
+show_help() {
     if [[ ! -z $1 ]]; then
         echo $1
     fi
@@ -63,11 +71,14 @@ IMAGE_VER=0.1
 SQL_DEST=/var/www/html/beacon/ousBeacon/beaconData.GRCh37.sqlite
 CONF_DEST=/var/www/html/beacon/ousBeacon/beacon.conf
 
-while getopts ":v:f:t:h" opt; do
+while getopts ":v:f:t:brd:h" opt; do
     case "$opt" in
         v) VCF_FILE="$OPTARG"; ACTION=convert ;;
         f) VCF_FILE="$OPTARG"; ACTION=filter ;;
         t) FILTER_THRESH="$OPTARG" ;;
+        b) ACTION=build ;;
+        r) ACTION=run ;;
+        d) DOCKER_ARGS+=("$OPTARG") ;;
         h) show_help ;;
         :) show_help "Missing argument value: -$OPTARG" ;;
         ?) BADIND=$((OPTIND-1)); show_help "Invalid argument: $(echo ${!BADIND})" ;;
@@ -116,16 +127,22 @@ elif [[ "$ACTION" == "filter" ]]; then
     $UTIL_DIR/$FILTER_EXE -f $VCF_FILE $FILTER_OPTS
 
     # TODO re-implement later
-# elif [[ "$ACTION" == "run" ]]; then
-#     if [[ ! -f $SQL_FILE ]]; then
-#         echo "Unable to find SQLite file: '$SQL_FILE'. Check it exists or specify a new location with -q|--sql"
-#         exit 1
-#     elif [[ ! -f $BEACON_CONF ]]; then
-#         echo "Unable to find beacon.conf file: '$BEACON_CONF'. Check it exists or specify a new location with -c|--conf"
-#         exit 1
-#     fi
-#
-#     echo "$DOCKER run -d -v $SQL_FILE:$SQL_DEST -v $BEACON_CONF:$CONF_DEST --restart=always --name ous_beacon -p 8080:80 $IMAGE_NAME:$IMAGE_VERSION"
+elif [[ "$ACTION" == "run" ]]; then
+    if [[ $($DOCKER image ls | egrep -c "$IMAGE_NAME\s+$IMAGE_VER") -ne 1 ]]; then
+        docker_build
+    fi
+    docker_run
+    # if [[ ! -f $SQL_FILE ]]; then
+    #     echo "Unable to find SQLite file: '$SQL_FILE'. Check it exists or specify a new location with -q|--sql"
+    #     exit 1
+    # elif [[ ! -f $BEACON_CONF ]]; then
+    #     echo "Unable to find beacon.conf file: '$BEACON_CONF'. Check it exists or specify a new location with -c|--conf"
+    #     exit 1
+    # fi
+    #
+    # echo "$DOCKER run -d -v $SQL_FILE:$SQL_DEST -v $BEACON_CONF:$CONF_DEST --restart=always --name ous_beacon -p 8080:80 $IMAGE_NAME:$IMAGE_VER"
+elif [[ "$ACTION" == "build" ]]; then
+    docker_build
 else
     echo "Unsupported action somehow: '$ACTION'"
     exit 1
