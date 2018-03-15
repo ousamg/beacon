@@ -48,6 +48,7 @@ show_help() {
     echo "   VCF Filtering:"
     echo "   -f     Filter the VCF file for variants with a minimum number of indications"
     echo "   -t     Minimum threshold when filtering VCF. Default: 5"
+    echo "   -g     GenePanel regions in BED format to filter with"
     echo
     echo "  Docker functionality:"
     echo "  -r      Run the docker image generated from the repo Dockerfile"
@@ -79,10 +80,11 @@ CTR_NAME=ous-beacon
 SQL_DEST=/var/www/html/beacon/beaconData.GRCh37.sqlite
 CONF_DEST=/var/www/html/beacon/beacon.conf
 
-while getopts ":v:f:t:brd:h" opt; do
+while getopts ":v:f:g:t:brd:h" opt; do
     case "$opt" in
         v) VCF_FILE="$OPTARG"; ACTION=convert ;;
         f) VCF_FILE="$OPTARG"; ACTION=filter ;;
+        g) BED_FILTER="$OPTARG" ;;
         t) FILTER_THRESH="$OPTARG" ;;
         b) ACTION=build ;;
         r) ACTION=run ;;
@@ -121,6 +123,7 @@ if [[ "$ACTION" == "convert" ]]; then
     fi
     echo
     echo "$(date "+%Y-%m-%d %H:%M:%S")  Finished creating new $SQL_FILE"
+
 elif [[ "$ACTION" == "filter" ]]; then
     if [[ ! -z $DEBUG ]]; then
         FILTER_OPTS="$FILTER_OPTS --debug"
@@ -132,7 +135,12 @@ elif [[ "$ACTION" == "filter" ]]; then
         FILTER_OPTS="$FILTER_OPTS -t $FILTER_THRESH"
     fi
 
+    if [[ ! -z $BED_FILTER ]]; then
+        FILTER_OPTS="$FILTER_OPTS -b $BED_FILTER"
+    fi
+
     $UTIL_DIR/$FILTER_EXE -f $VCF_FILE $FILTER_OPTS
+
 elif [[ "$ACTION" == "run" ]]; then
     if [[ $($DOCKER image ls | egrep -c "$IMAGE_NAME\s+$IMAGE_VER") -ne 1 ]]; then
         docker_build

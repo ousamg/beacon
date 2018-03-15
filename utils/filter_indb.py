@@ -56,6 +56,7 @@ def main():
             sys.exit(1)
     else:
         input_filename = args.file
+        in_header = True
 
     if input_filename[-3:] == ".gz":
         infile = gzip.open(input_filename)
