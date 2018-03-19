@@ -25,5 +25,5 @@ test-utils: build
 	  --label io.ousamg.gitversion=$(BRANCH) \
 	  --name $(PIPELINE_ID)-test $(NAME_OF_GENERATED_IMAGE)
 
-	docker exec $(PIPELINE_ID)-test test/run_tests.sh
+	docker exec $(PIPELINE_ID)-test test/test_utils.sh
 	@docker rm -f $(PIPELINE_ID)-test
