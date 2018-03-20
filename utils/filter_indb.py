@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 import argparse
 import datetime
 import gzip
@@ -120,8 +120,11 @@ def main():
     if args.verbose:
         print("{}\tFinished filtering {}".format(now(), input_filename))
 
+    meta["total"] = meta["seen"] + meta["bed_filtered"]
+    if meta["missing_indications"] / meta["total"] > 0.1:
+        print("\n\n*** WARNING *** Missing indications on {missing_indications} of {total} variants\n".format(**meta))
+
     if args.meta:
-        meta["total"] = meta["seen"] + meta["bed_filtered"]
         print()
         print("Processing stats on {}".format(args.file))
         print("\tTotal variants:      {}".format(meta["total"]))

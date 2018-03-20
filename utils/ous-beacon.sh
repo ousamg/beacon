@@ -21,7 +21,7 @@ backup_db() {
     target_file=$1
     if [[ -e $target_file ]]; then
         old_db="$target_file.$(date +%Y%m%d-%H%M%S)"
-        mv $target_file $old_db
+        cp $target_file $old_db
         echo "Backed up $target_file file to $old_db"
     fi
 }
@@ -116,10 +116,6 @@ if [[ "$ACTION" == "convert" ]]; then
     if [[ $? != 0 ]]; then
         echo "Exiting failed attempt" >&2
         exit 1
-    fi
-    if [[ "$temp_sql" != "$SQL_FILE" ]]; then
-        backup_db $SQL_FILE
-        cp $temp_sql $SQL_FILE
     fi
     echo
     echo "$(date "+%Y-%m-%d %H:%M:%S")  Finished creating new $SQL_FILE"
