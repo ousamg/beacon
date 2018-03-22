@@ -63,7 +63,7 @@ show_help() {
 
 # VCF Filtering defaults
 UTIL_DIR=$(abs_dirname)
-FILTER_EXE=filter_indb.py
+FILTER_EXE=filter_vcf.py
 FILTER_OPTS=""
 
 # VCF conversion defaults
