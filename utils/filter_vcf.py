@@ -186,6 +186,7 @@ def main():
         print("\tTotal run time:      {:02d}m{:02d}.{:03d}s".format(run_time.seconds // 60, run_time.seconds % 60, run_time.microseconds // 1000))
         print()
 
+
 def now():
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 

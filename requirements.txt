@@ -1,3 +1,14 @@
+certifi==2018.1.18
+chardet==3.0.4
+DateTime==4.2
+idna==2.6
+jsonpickle==0.9.6
 pybedtools==0.7.10
-pyvcf
-datetime
+pysam==0.14.1
+python-digitalocean==1.13.2
+pytz==2018.3
+PyVCF==0.6.8
+requests==2.18.4
+six==1.11.0
+urllib3==1.22
+zope.interface==4.4.3
