@@ -6,7 +6,7 @@ NAME_OF_GENERATED_IMAGE = local/$(PIPELINE_ID)
 
 ASSEMBLY_ID ?= GRCh37
 BEACON_DB ?= beaconData.$(ASSEMBLY_ID).sqlite
-BEACON_EXE := query
+BEACON_EXE := ./query
 FILTER_EXE := utils/filter_vcf.py
 DB_TABLE ?= ousamg
 THRESHOLD ?= 5
@@ -18,21 +18,34 @@ AF ?= ""
 help :
 	@echo
 	@echo "  * Data operations"
-	@echo " make load VCF_FILE=something.vcf   - Loads the specified VCF file into $(BEACON_DB)"
-	@echo " make filter [ THRESHOLD=N ] [ BED_FILTER=something.bed ] [ AF=allele_frequency ]"
+	@echo " make import VCF_FILE=someData.vcf[.gz] [ DB_TABLE=table_name ] [ ASSEMBLY_ID=GRCh## ]"
+	@echo "      - Loads the specified VCF file into $(BEACON_DB)"
+	@echo "      VCF_FILE: VCF file to be imported, can be gzipped. Required."
+	@echo "      DB_TABLE: the name of the table / dataset. Default: $(DB_TABLE)"
+	@echo "      ASSEMBLY_ID: Genome assembly ID of the dataset. Default: $(ASSEMBLY_ID)"
+	@echo
+	@echo " make filter VCF_FILE=someData.vcf[.gz] [ THRESHOLD=N ] [ BED_FILTER=something.bed ] [ AF=allele_frequency ]"
+	@echo "      - Filters VCF_FILE to have a minimum number of indications, be within certain"
+	@echo "        regions, and/or be under a maximum observed allele frequency"
+	@echo "      VCF_FILE: VCF file(s) to be imported, can be gzipped. Required."
 	@echo "      THRESHOLD: minimum number of indications. Default: $(THRESHOLD)"
 	@echo "      BED_FILTER: restrict variants to regions in bed file. Default: $(BED_FILTER)"
 	@echo "      AF: maximum allele frequency of variants. Default: $(AF)"
+	@echo
 	@echo
 	@echo "  * Testing"
 	@echo " make test-beacon                   - Test beacon query responses"
 	@echo " make test-utils                    - Test beacon utility functions"
 	@echo " make test | make test-all          - Run all tests"
 	@echo
+	@echo
 	@echo "  * Production"
 	@echo " make build                         - Build the docker image"
 	@echo " make deploy                        - Build and run the docker image locally"
-	@echo " make digitalocean                  - Build and deploy to a digitalocean droplet"
+	@echo " make digitalocean DO_CONFIG=config.json DO_SSHKEY=/path/to/some_key"
+	@echo "      - Creates a droplet in your DigitalOcean account, deploys and starts the beacon"
+	@echo "      DO_CONFIG: json file containing droplet options"
+	@echo "      DO_SSHKEY: Path to private key to connect to droplet"
 	@echo
 
 # Check that given variables are set and all have non-empty values,
@@ -69,9 +82,9 @@ ifdef DEBUG
 FILT_OPTS += --debug
 endif
 
-.PHONY: convert filter
+.PHONY: import filter
 
-convert:
+import:
 	cp $(BEACON_DB) $(BACKUP_DB)
 	$(BEACON_EXE) $(ASSEMBLY_ID) $(DB_TABLE) $(VCF_FILE)
 	@echo "Updated db, previous data saved in $(BACKUP_DB)"
@@ -84,7 +97,7 @@ filter:
 # Testing
 #---------------------------------------------
 
-.PHONY: build test test-all test-beacon test-utils
+.PHONY: build test test-all test-beacon test-utils docker-clean
 
 build:
 	docker build -t $(NAME_OF_GENERATED_IMAGE) .
@@ -122,6 +135,8 @@ deploy: build
 	docker run -dit \
 		-p $(LOCAL_PORT):$(IMAGE_PORT) \
 		--name $(PIPELINE_ID) $(NAME_OF_GENERATED_IMAGE)
+
+redeploy: build docker-clean deploy
 
 digitalocean: create-droplet
 	@echo "sshd takes a bit to warm sometimes, sleeping to give it a chance"

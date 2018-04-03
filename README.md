@@ -1,23 +1,23 @@
-Originally forked from https://github.com/maximilianh/ucscBeacon
-
----
-
 Introduction
 ============
 
-The GA4H beacon system http://ga4gh.org/#/beacon is a small webservice
-that accepts a chromosome position and allele and replies with "true" or
-"false. This is an implementation of the GA4GH beacon 0.2 draft API which
-tries to be as simple as possible to install and configure, it requires
-only Python >2.5, the default in current linux distributions and OSX.
+The [GA4H beacon system](http://beacon-project.io) is a means of more
+easily sharing genetic data. The user specifies a chromosome, position and allele
+and the beacon network returns true if anyone is sharing a dataset with that
+variant. They can then contact the dataset owner for additional details and
+sharing requirements.
 
-For security reasons, the script is small and either
-provides its own webserver or runs within your existing webserver as a CGI.
-This beacon can slow down queries if too many come in from the same IP
-address, to prevent that someone queries the whole genome (see the end of
-this document). For security reasons, your raw data, like VCF (see below) are
-not accessed by the script, but first converted into the minimal format
-chrom-position-alternateBases.
+The OUSAMG beacon is a python implementation of the 0.2 API, based originally on
+the [UCSC Beacon](https://github.com/maximilianh/ucscBeacon). The data we share
+is based on inDB, filtered for gene regions of interest that have 5 or more
+observations within our database. VCF data is not stored on the web server, just
+the chromosome-position-allele combinations that we have decided to share.
+
+Additional information on the Beacon Network:
+* FAQ page - http://beacon-project.io/faqs.html
+* Full API spec - https://app.swaggerhub.com/apis/ELIXIR-Finland/ga-4_gh_beacon_api_specification/0.4.0
+* Central beacon search page - https://beacon-network.org/#/search
+
 
 Quick-start using the built-in webserver
 =======================================
