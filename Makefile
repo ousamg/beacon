@@ -152,3 +152,5 @@ create-droplet:
 
 clean:
 	-rm droplet.ipaddr
+	-docker rm -f $(PIPELINE_ID)-test
+	-docker rm -f $(NAME_OF_GENERATED_IMAGE)
