@@ -1,0 +1,2 @@
+query gitlab-language=python
+testBeacon gitlab-language=python
