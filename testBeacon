@@ -1,4 +1,6 @@
 #!/usr/bin/env python2
+from __future__ import print_function
+
 import imp
 import json
 import os.path
@@ -7,10 +9,10 @@ import urllib2
 import unittest
 
 if os.path.isfile("query"):
-    imp.load_source("query", "query") # query does not have the .py extension
+    imp.load_source("query", "query")  # query does not have the .py extension
     import query as beaconServer
 else:
-    print "Cannot locate query file, cannot test"
+    print("Cannot locate query file, cannot test")
     sys.exit(1)
 
 baseUrl = None
@@ -18,7 +20,8 @@ if len(sys.argv) != 1:
     baseUrl = sys.argv[1]
     if len(baseUrl) < 9 or baseUrl[:4] != "http":
         baseUrl = "http://" + baseUrl
-    print "Using baseUrl: '{}'".format(baseUrl)
+    print("Using baseUrl: '{}'".format(baseUrl))
+
 
 def queryServer(chrom, pos, alternateBases, referenceBases, reference, dataset):
     " if baseUrl is set, query via http. Otherwise just call the script directly "
@@ -34,6 +37,7 @@ def queryServer(chrom, pos, alternateBases, referenceBases, reference, dataset):
         data = urllib2.urlopen(url).read()
         ret = json.loads(data)
     return ret
+
 
 class TestBeacon(unittest.TestCase):
     def test_outside(self):
@@ -120,6 +124,7 @@ class TestBeacon(unittest.TestCase):
         ds = "test"
         rep = queryServer(chrom, pos, ab, rb, ref, ds)
         self.assertTrue(rep["response"]["exists"] == "false")
+
 
 suite = unittest.TestLoader().loadTestsFromTestCase(TestBeacon)
 unittest.TextTestRunner(verbosity=2).run(suite)

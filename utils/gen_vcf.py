@@ -34,7 +34,7 @@ CHROMS = [
     ("X", 155270560),
     ("Y", 59373566)
 ]
-BASES = [ "A", "C", "G", "T" ]
+BASES = ["A", "C", "G", "T"]
 # weight variant types for random.choice
 VAR_TYPES = ["SNP"] * 90 + ["INS"] * 5 + ["DEL"] * 5
 MAX_INS = 10
@@ -54,10 +54,11 @@ IND_PREFIX = "indications_OUSWES"
 DEFAULT_VAL = '.'
 DEFAULT_NUM = 500
 DEFAULT_OUTPUT = "ousamg-test_data.vcf.gz"
-DEFAULT_CHROM = [ x[0] for x in CHROMS ]
+DEFAULT_CHROM = [x[0] for x in CHROMS]
 FILTERS = ["PASS"] * 3 + ["LowQual"]
 FORMAT = 'GT'
 DUMMY = './.'
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -179,8 +180,10 @@ def main():
 
 ###
 
+
 def now():
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
 
 def comma_list(arg_str):
     try:

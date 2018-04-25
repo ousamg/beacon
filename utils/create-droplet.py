@@ -10,10 +10,10 @@ import time
 
 
 DEF_CONFIG = {
-    "token": None, # always load from file
+    "token": None,  # always load from file
     "region": None,
     "name": "beacon",
-    "image": "docker-16-04", # pre-made docker image
+    "image": "docker-16-04",  # pre-made docker image
     "size_slug": "s-1vcpu-1gb",
     "monitoring": True,
     "tags": []

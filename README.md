@@ -9,9 +9,10 @@ sharing requirements.
 
 The OUSAMG beacon is a python implementation of the 0.2 API, based originally on
 the [UCSC Beacon](https://github.com/maximilianh/ucscBeacon). The data we share
-is based on inDB, filtered for gene regions of interest that have 5 or more
-observations within our database. VCF data is not stored on the web server, just
-the chromosome-position-allele combinations that we have decided to share.
+is based on our inDB, filtered for gene regions of interest that have 5 or more
+observations within our database. This minimizes that likelihood of sample
+re-identification. VCF data is not stored on the web server, just the
+chromosome-position-allele combinations that we have decided to share.
 
 Additional information on the Beacon Network:
 * FAQ page - http://beacon-project.io/faqs.html
@@ -24,7 +25,7 @@ Quick-start using the built-in webserver
 
 This should work in OSX, Linux or Windows when Python is installed (in Windows you need to rename query to query.py):
 
-    $ git clone https://git@git.ousamg.io:apps/beacon.git
+    $ git clone git@github.com:ousamg/beacon.git
     $ cd beacon
     $ ./query -p 8888
 
