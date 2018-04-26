@@ -10,12 +10,13 @@ BEACON_EXE := ./query
 FILTER_EXE := utils/filter_vcf.py
 DB_TABLE ?= ousamg
 THRESHOLD ?= 5
-BED_FILTER ?= ""
-AF ?= ""
 
 .PHONY: help
 
 help :
+	@echo
+	@echo "  Data and DigitalOcean operations require python packages not used by the beacon server."
+	@echo "  Install them by running \`pip install -r requirements.txt\`"
 	@echo
 	@echo "  * Data operations"
 	@echo " make import VCF_FILE=someData.vcf[.gz] [ DB_TABLE=table_name ] [ ASSEMBLY_ID=GRCh## ]"
@@ -27,10 +28,11 @@ help :
 	@echo " make filter VCF_FILE=someData.vcf[.gz] [ THRESHOLD=N ] [ BED_FILTER=something.bed ] [ AF=allele_frequency ]"
 	@echo "      - Filters VCF_FILE to have a minimum number of indications, be within certain"
 	@echo "        regions, and/or be under a maximum observed allele frequency"
+	@echo '        Output is written to filtered_$${VCF_FILE}'
 	@echo "      VCF_FILE: VCF file(s) to be imported, can be gzipped. Required."
 	@echo "      THRESHOLD: minimum number of indications. Default: $(THRESHOLD)"
-	@echo "      BED_FILTER: restrict variants to regions in bed file. Default: $(BED_FILTER)"
-	@echo "      AF: maximum allele frequency of variants. Default: $(AF)"
+	@echo "      BED_FILTER: restrict variants to regions in bed file. " # Default: $(BED_FILTER)
+	@echo "      AF: maximum allele frequency of variants." # Default: $(AF)
 	@echo
 	@echo
 	@echo "  * Testing"
@@ -68,18 +70,18 @@ __check_defined = \
 #---------------------------------------------
 
 BACKUP_DB ?= $(BEACON_DB).$(shell date +%Y%m%d-%H%M%S)
-FILT_OPTS := -t $(THRESHOLD)
+FILTER_OPTS := -t $(THRESHOLD)
 ifdef AF
-FILT_OPTS += -af $(AF)
+FILTER_OPTS += -af $(AF)
 endif
 ifdef BED_FILTER
-FILT_OPTS += -b $(BED_FILTER)
+FILTER_OPTS += -b $(BED_FILTER)
 endif
 ifdef VERBOSE
-FILT_OPTS += --verbose
+FILTER_OPTS += --verbose
 endif
 ifdef DEBUG
-FILT_OPTS += --debug
+FILTER_OPTS += --debug
 endif
 
 .PHONY: import filter
@@ -111,6 +113,7 @@ test-beacon: build
 	  --name $(PIPELINE_ID)-test $(NAME_OF_GENERATED_IMAGE)
 
 	docker exec $(PIPELINE_ID)-test ./testBeacon
+	docker exec $(PIPELINE_ID)-test ./testBeacon localhost/query
 	@docker rm -f $(PIPELINE_ID)-test
 
 test-utils: build

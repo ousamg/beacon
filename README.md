@@ -23,31 +23,35 @@ Additional information on the Beacon Network:
 Quick-start using the built-in webserver
 =======================================
 
-This should work in OSX, Linux or Windows when Python is installed (in Windows you need to rename query to query.py):
+This should work in OSX, Linux or Windows when Python is installed (in Windows
+you need to rename query to query.py):
 
-    $ git clone git@github.com:ousamg/beacon.git
-    $ cd beacon
+From the repo base directory:
+
     $ ./query -p 8888
 
 Then go to your web browser and try a few URLs:
 
 * http://localhost:8888/info
-* http://localhost:8888/query?dataset=test&chromosome=1&position=10150&allele=A&format=text
-* http://localhost:8888/query?dataset=test&chromosome=1&position=10150&allele=A
-* http://localhost:8888/query?dataset=test&chromosome=1&position=10150&allele=C
+* http://localhost:8888/query?dataset=test&chromosome=1&position=10150&alternateBasesA
+* http://localhost:8888/query?dataset=test&chromosome=1&position=10150&alternateBasesC
 
 Stop the beacon server by hitting Ctrl+C.
 
-Reset the databse and import your own data in VCF format (see below for other supported formats):
+Reset the databse and import your own data, without filtering:
 
-    $ rm beaconData.GRCh37.sqlite
+    $ mv beaconData.GRCh37.sqlite beaconData.GRCh37.sqlite.old
     $ ./query GRCh37 datasetName yourData.vcf.gz
+
+Details on importing other data formats are below, and details on filtering your data
+can be found by running `make help` in the base repo directory.
 
 Restart the server:
 
     $ ./query -p 8888
 
-And query again with URLs, as above, but adapting the chromosome and position to one that is valid in your dataset.
+And query again with URLs, as above, but adapting the chromosome and position to one
+that is valid in your dataset.
 
 You can adapt the name of your beacon, your institution etc. by editing the
 file beacon.conf and change the beacon help text by editing the file help.txt
@@ -57,8 +61,7 @@ Running in Docker
 
 From the repo base directory:
 
-    $ docker build -t ousamg/beacon .
-    $ docker run -p 8080:80 -dit --name ous-beacon ousamg/beacon
+    $ make deploy
 
 
 Test it
@@ -66,27 +69,19 @@ Test it
 
 Usage help info:
 
-    $ curl http://localhost:8080/beacon/query
+    $ curl http://localhost/query
+
 
 Some test queries against the ICGC sample that is part of the repo:
 
-    $ curl 'http://localhost:8080/beacon/query?chromosome=1&position=10150&alternateBases=A&format=text'
-    $ curl 'http://localhost:8080/beacon/query?chromosome=10&position=4772339&alternateBases=T&format=text'
+    $ curl 'http://localhost/query?chromosome=1&position=10150&alternateBases=A'
+    $ curl 'http://localhost/query?chromosome=10&position=4772339&alternateBases=T'
 
-Both should display "true".
-
-Or see the full JSON response:
-
-    $ curl 'http://localhost:8080/beacon/query?chromosome=1&position=10150&alternateBases=A'
-    $ curl 'http://localhost:8080/beacon/query?chromosome=10&position=4772339&alternateBases=T'
+**NB:** Position is _0-indexed_ and not 1-indexed as in a VCF file
 
 View the meta information about the beacon (stored in `config/beacon.conf`):
 
-    $ curl http://localhost:8080/beacon/info
-
-For easier usage, the script supports a parameter 'format=text' which prints only one word (true or false). If you don't specify it, the result will be returned as a JSON string, which includes the query parameters:
-
-    $ curl 'http://localhost:8080/beacon/query?chromosome=10&position=9775129&alternateBases=T'
+    $ curl http://localhost/info
 
 
 Adding your own data
@@ -113,11 +108,11 @@ A typical import speed is 100k rows/sec, so it can take a while if you have mill
 
 You should now be able to query your new dataset with URLs like this:
 
-    $ curl "http://localhost:8080/beacon/query?chromosome=1&position=1234&alternateBases=T"
+    $ curl "http://localhost/query?chromosome=1&position=1234&alternateBases=T"
 
 By default, the beacon will check all datasets, unless you provide a dataset name, like this:
 
-    $ curl "http://localhost:8080/beacon/query?chromosome=1&position=1234&alternateBases=T&dataset=icgc"
+    $ curl "http://localhost/query?chromosome=1&position=1234&alternateBases=T&dataset=icgc"
 
 Note that external beacon users cannot query the database during the import.
 

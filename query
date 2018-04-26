@@ -49,8 +49,7 @@ responses = {
 }
 contentTypes = {
     "json": "application/json",
-    "text": "text/html",
-    "": "text/html"
+    "text": "text/html"
 }
 
 # special case: same datasets do not have alt alleles. In this case, an overlap is enough to trigger a "true"
@@ -237,7 +236,7 @@ class BeaconError(Exception):
         self.code = code
 
 
-def checkParams(chrom, pos, allele, reference, track):
+def checkParams(chrom, pos, altBases, reference, track):
     " make sure the parameters follow the spec "
     # default is GRCh37 if no assembly has been provided
     if reference is None or reference == "":
@@ -251,15 +250,15 @@ def checkParams(chrom, pos, allele, reference, track):
     if chrom is None or chrom == "":
         raise BeaconError("missing chromosome parameter")
 
-    # allele is required and uppercase
-    if allele is None or allele == "":
-        raise BeaconError("missing allele parameter")
-    allele = allele.upper()
+    # altBases is required and uppercase
+    if altBases is None or altBases == "":
+        raise BeaconError("missing alternateBases parameter")
+    altBases = altBases.upper()
 
-    # allele can only be a DNA sequence (~SNP) or an indel
-    valid_allele = re.compile("^([ACTG]+)|(I[ACTG]+)|(D\d+)$")
-    if re.match(valid_allele, allele) is None:
-        raise BeaconError("invalid allele parameter, can only be a [ACTG]+ or I[ACTG]+ or D[0-9]+")
+    # altBases can only be a DNA sequence (~SNP) or an indel
+    valid_altBases = re.compile("^([ACTG]+)|(I[ACTG]+)|(D\d+)$")
+    if re.match(valid_altBases, altBases) is None:
+        raise BeaconError("invalid alternateBases parameter, can only be a [ACTG]+ or I[ACTG]+ or D[0-9]+")
 
     if track is not None:
         if not track.isalnum():
@@ -277,7 +276,7 @@ def checkParams(chrom, pos, allele, reference, track):
     if not ((chrom.isdigit() and int(chrom) >= 1 and int(chrom) <= 22) or chrom in ["X", "Y", "M", "test"]):
         raise BeaconError("invalid chromosome name %s" % chrom)
 
-    return chrom, pos, allele, reference, track
+    return chrom, pos, altBases, reference, track
 
 
 def lookupAllele(chrom, pos, allele, reference, dataset):
@@ -300,9 +299,9 @@ def lookupAllele(chrom, pos, allele, reference, dataset):
             cur.execute(sql, (chrom, pos, allele))
         row = cur.fetchone()
         if row is not None:
-            return "true"
+            return True
 
-    return "false"
+    return False
 
 
 def lookupAlleleJson(chrom, pos, altBases, refBases, reference, dataset):
@@ -311,16 +310,17 @@ def lookupAlleleJson(chrom, pos, altBases, refBases, reference, dataset):
     exists = lookupAllele(chrom, pos, altBases, reference, dataset)
 
     if chrom == "test" and pos == 0:
-        exists = "true"
+        exists = True
 
     query = {
         "alternateBases": altBases,
         "referenceBases": refBases,
         "chromosome": chrom.replace("chr", ""),
         "position": pos,
-        "reference": reference,
-        "dataset": dataset
+        "reference": reference
     }
+    if dataset is not None:
+        query["dataset"] = dataset
 
     ret = {"beacon": getBeaconDesc(), "query": query,
            "response": {"exists": exists}}
@@ -668,14 +668,23 @@ def importFiles(refDb, fileNames, datasetName, format):
 if cherryPyLoaded:
     class DevServer(object):
         @cherrypy.expose
-        def query(self, chromosome=None, position=None, referenceBases=None, alternateBases=None, reference=None, dataset=None, format=None, allele=None):
-            if allele is not None:
-                alternateBases = allele
-            return beaconQuery(chromosome, position, referenceBases, alternateBases, reference, dataset, format)
+        def query(self, chromosome=None, position=None, referenceBases=None, alternateBases=None, reference=None, dataset=None):
+            if chromosome is None and position is None and alternateBases is None:
+                return makeHelp()
+
+            try:
+                cherrypy.response.headers['Content-Type'] = contentTypes["json"]
+                queryResp = beaconQuery(chromosome, position, referenceBases, alternateBases, reference, dataset)
+                return makeJson(queryResp)
+            except BeaconError as e:
+                raise cherrypy.HTTPError(e.code, e.msg)
+            except Exception as e:
+                raise cherrypy.HTTPError(500, str(e))
 
         @cherrypy.expose
+        @cherrypy.tools.json_out()
         def info(self):
-            return makeJson(beaconInfo())
+            return beaconInfo()
 
 
 def startDevServer(port):
@@ -712,17 +721,13 @@ def mainCommandLine():
     importFiles(refDb, fileNames, datasetName, options.format)
 
 
-def beaconQuery(chrom, pos, refBases, altBases, reference, dataset, format):
+def beaconQuery(chrom, pos, refBases, altBases, reference, dataset):
     """ query the beacon, returns a JSON or text string """
     if chrom is None and pos is None and altBases is None:
         printResponse(makeHelp(), contentTypes["text"], 400)
         sys.exit(0)
 
-    ret = lookupAlleleJson(chrom, pos, altBases, refBases, reference, dataset)
-    if format == "text":
-        return ret["response"]["exists"]
-    else:
-        return makeJson(ret)
+    return lookupAlleleJson(chrom, pos, altBases, refBases, reference, dataset)
 
 
 def mainCgi():
@@ -746,15 +751,10 @@ def mainCgi():
     altBases = form.getfirst("alternateBases")
     reference = form.getfirst("reference")
     dataset = form.getfirst("dataset")
-    format = form.getfirst("format")
 
     try:
-        queryResp = beaconQuery(chrom, pos, refBases, altBases, reference, dataset, format)
-
-        if format is not None and format.lower() == "json":
-            printResponse(queryResp, contentTypes["json"])
-        else:
-            printResponse(queryResp)
+        queryResp = beaconQuery(chrom, pos, refBases, altBases, reference, dataset)
+        printResponse(makeJson(queryResp), contentTypes["json"])
     except BeaconError as e:
         printResponse(e.msg, contentTypes["text"], e.code)
     except Exception as e:
