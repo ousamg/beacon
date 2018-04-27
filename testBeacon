@@ -48,7 +48,7 @@ class TestBeacon(unittest.TestCase):
         self.assertTrue(rep["query"]["reference"] == "GRCh37")
         self.assertTrue(rep["query"]["alternateBases"] == "T")
         self.assertTrue(rep["query"]["chromosome"] == "1")
-        self.assertTrue(rep["response"]["exists"] == "false")
+        self.assertTrue(rep["response"]["exists"] is False)
 
         bi = rep["beacon"]
         self.assertTrue(bi["id"] != "")
@@ -62,7 +62,7 @@ class TestBeacon(unittest.TestCase):
     #     " test true reply with the special testing chromosome"
     #     pos = 0
     #     rep = queryServer("test", str(pos), "A", "", "", "test")
-    #     self.assertTrue(rep["response"]["exists"] == "true")
+    #     self.assertTrue(rep["response"]["exists"] is True)
 
     def test_allele_true(self):
         "test true reply with known variant entry"
@@ -73,13 +73,13 @@ class TestBeacon(unittest.TestCase):
         ref = "GRCh37"
         ds = "test"
         rep = queryServer(chrom, pos, ab, rb, ref, ds)
-        self.assertTrue(rep["response"]["exists"] == "true")
+        self.assertTrue(rep["response"]["exists"] is True)
 
     def test_allele_false(self):
         " test false reply "
         pos = 10000
         rep = queryServer("test", str(pos), "A", "", "", "test")
-        self.assertTrue(rep["response"]["exists"] == "false")
+        self.assertTrue(rep["response"]["exists"] is False)
 
     def test_insertion_true(self):
         "test insertions found response"
@@ -90,7 +90,7 @@ class TestBeacon(unittest.TestCase):
         ref = "GRCh37"
         ds = "test"
         rep = queryServer(chrom, pos, ab, rb, ref, ds)
-        self.assertTrue(rep["response"]["exists"] == "true")
+        self.assertTrue(rep["response"]["exists"] is True)
 
     def test_insertion_false(self):
         "test insertions not found response"
@@ -101,7 +101,7 @@ class TestBeacon(unittest.TestCase):
         ref = "GRCh37"
         ds = "test"
         rep = queryServer(chrom, pos, ab, rb, ref, ds)
-        self.assertTrue(rep["response"]["exists"] == "false")
+        self.assertTrue(rep["response"]["exists"] is False)
 
     def test_deletion_true(self):
         "test deletion found response"
@@ -112,7 +112,7 @@ class TestBeacon(unittest.TestCase):
         ref = "GRCh37"
         ds = "test"
         rep = queryServer(chrom, pos, ab, rb, ref, ds)
-        self.assertTrue(rep["response"]["exists"] == "true")
+        self.assertTrue(rep["response"]["exists"] is True)
 
     def test_deletion_false(self):
         "test deletion not found response"
@@ -123,7 +123,7 @@ class TestBeacon(unittest.TestCase):
         ref = "GRCh37"
         ds = "test"
         rep = queryServer(chrom, pos, ab, rb, ref, ds)
-        self.assertTrue(rep["response"]["exists"] == "false")
+        self.assertTrue(rep["response"]["exists"] is False)
 
 
 suite = unittest.TestLoader().loadTestsFromTestCase(TestBeacon)
