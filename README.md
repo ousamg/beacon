@@ -9,14 +9,17 @@ sharing requirements.
 
 The OUSAMG beacon is a python implementation of the 0.2 API, based originally on
 the [UCSC Beacon](https://github.com/maximilianh/ucscBeacon). The data we share
-is based on our inDB, filtered for gene regions of interest that have 5 or more
-observations within our database. This minimizes that likelihood of sample
-re-identification. VCF data is not stored on the web server, just the
+is from our internal database, filtered for gene regions of interest that have
+5 or more observations within our database. This minimizes the likelihood of
+sample re-identification. VCF data is not stored on the web server, just the
 chromosome-position-allele combinations that we have decided to share.
 
 Additional information on the Beacon Network:
 * FAQ page - http://beacon-project.io/faqs.html
-* Full API spec - https://app.swaggerhub.com/apis/ELIXIR-Finland/ga-4_gh_beacon_api_specification/0.4.0
+* Full API spec
+    * 0.4: https://app.swaggerhub.com/apis/ELIXIR-Finland/ga-4_gh_beacon_api_specification/0.4.0 (interactive)
+    * 0.4: https://github.com/ga4gh-beacon/specification/releases/tag/v0.4.0 (archive)
+    * 0.3: https://github.com/ga4gh-beacon/specification/releases/tag/v0.3.0 (archive)
 * Central beacon search page - https://beacon-network.org/#/search
 
 
@@ -33,8 +36,8 @@ From the repo base directory:
 Then go to your web browser and try a few URLs:
 
 * http://localhost:8888/info
-* http://localhost:8888/query?dataset=test&chromosome=1&position=10150&alternateBasesA
-* http://localhost:8888/query?dataset=test&chromosome=1&position=10150&alternateBasesC
+* http://localhost:8888/query?dataset=test&chromosome=1&position=10150&alternateBases=A
+* http://localhost:8888/query?dataset=test&chromosome=1&position=10150&alternateBases=C
 
 Stop the beacon server by hitting Ctrl+C.
 
