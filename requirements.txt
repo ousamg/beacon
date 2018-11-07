@@ -8,7 +8,7 @@ pysam==0.14.1
 python-digitalocean==1.13.2
 pytz==2018.3
 PyVCF==0.6.8
-requests==2.18.4
+requests>=2.20.0
 six==1.11.0
 urllib3==1.22
 zope.interface==4.4.3
